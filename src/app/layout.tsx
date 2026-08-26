@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import "./globals.css";
 import { Navbar } from "@/components/nav/Navbar";
+import { Footer } from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
-  title: "Repo Rizz — Your Repo Has a Reputation",
+  title: "Repo Rizz â€” Your Repo Has a Reputation",
   description:
     "Repo Rizz analyzes a public GitHub repository and evaluates its engineering health across code quality, security, documentation, testing, maintainability, activity, architecture, and resume readiness.",
   keywords: [
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
     icon: "/favicon.svg",
   },
   openGraph: {
-    title: "Repo Rizz — Your Repo Has a Reputation",
+    title: "Repo Rizz â€” Your Repo Has a Reputation",
     description:
       "Turn a GitHub repository into an engineering health report. Code quality. Security. Documentation. Testing. Resume readiness.",
     type: "website",
@@ -28,7 +29,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Repo Rizz — Your Repo Has a Reputation",
+    title: "Repo Rizz â€” Your Repo Has a Reputation",
     description:
       "Turn a GitHub repository into an engineering health report.",
   },
@@ -48,6 +49,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col noise-overlay">
         <Navbar />
         <div className="flex-1">{children}</div>
+        <Footer />
       </body>
     </html>
   );

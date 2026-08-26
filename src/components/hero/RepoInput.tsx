@@ -54,14 +54,7 @@ export function RepoInput({ variant = "hero", className }: RepoInputProps) {
           )}
           style={{ background: "var(--surface)" }}
         >
-          <span
-            className={cn(
-              "font-mono text-text-secondary mr-3 select-none",
-              isHero ? "text-base" : "text-sm"
-            )}
-          >
-            github.com/
-          </span>
+          
           <input
             type="text"
             value={value}
@@ -71,7 +64,7 @@ export function RepoInput({ variant = "hero", className }: RepoInputProps) {
             }}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            placeholder="owner/repository"
+            placeholder={isFocused ? "" : "ENTER GITHUB REPO LINK HERE..."}
             className={cn(
               "flex-1 bg-transparent outline-none placeholder:text-text-secondary/40 font-mono",
               isHero ? "text-lg" : "text-sm"
@@ -133,5 +126,6 @@ export function RepoInput({ variant = "hero", className }: RepoInputProps) {
     </div>
   );
 }
+
 
 
