@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -22,7 +22,7 @@ export function RepoInput({ variant = "hero", className }: RepoInputProps) {
       e.preventDefault();
 
       if (demo) {
-        router.push("/analyze?demo=true");
+        router.push("/analyze?repo=krishna19072007/repo-rizz");
         return;
       }
 
@@ -126,10 +126,12 @@ export function RepoInput({ variant = "hero", className }: RepoInputProps) {
             )}
           >
             <Zap className="w-3 h-3" />
-            TRY DEMO
+            TRY REPO RIZZ &rarr;
           </button>
         </div>
       )}
     </div>
   );
 }
+
+
