@@ -2,6 +2,7 @@
 <html lang="en" class="h-full">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Repository Analysis | Repo Rizz</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -1025,17 +1026,27 @@
         .then(data => {
           apiData = data.result;
 
-          // Save to localstorage history
+          // Save enriched history to localstorage
           const history = JSON.parse(localStorage.getItem("analysis_history") || "[]");
           const existingIdx = history.findIndex(h => h.owner === parsed.owner && h.name === parsed.name);
           if (existingIdx !== -1) history.splice(existingIdx, 1);
+          const dimScores = {};
+          (apiData.dimensions || []).forEach(d => { dimScores[d.id] = d.score; });
           history.unshift({
+            id: apiData.id || Date.now(),
             owner: parsed.owner,
             name: parsed.name,
+            fullName: `${parsed.owner}/${parsed.name}`,
             score: apiData.resumeReadinessScore,
+            status: apiData.resumeReadinessStatus || "not_ready",
+            summary: apiData.resumeReadinessSummary || "",
+            dimensions: dimScores,
+            rizzVerdict: apiData.rizzVerdict || apiData.aiRizzVerdict || "",
+            criticalCount: (apiData.criticalFindings || []).length,
+            aiUnavailable: apiData.aiUnavailable !== false,
             time: Date.now()
           });
-          localStorage.setItem("analysis_history", JSON.stringify(history.slice(0, 10))); // Cap at 10
+          localStorage.setItem("analysis_history", JSON.stringify(history.slice(0, 25))); // Cap at 25
 
           // Check if pipeline has already finished naturally, if so, trigger transition
           if (pipelineFinished) {

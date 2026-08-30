@@ -2,6 +2,7 @@
 <html lang="en" class="h-full">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>History | Repo Rizz</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -29,9 +30,67 @@
       color: #ffffff;
       font-family: ui-sans-serif, system-ui, sans-serif;
     }
+
+    .grid-bg {
+      background-size: 50px 50px;
+      background-image:
+        linear-gradient(to right, rgba(39, 42, 48, 0.1) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(39, 42, 48, 0.1) 1px, transparent 1px);
+    }
+
+    /* Score ring animation */
+    .score-ring { transition: stroke-dashoffset 1.2s cubic-bezier(0.16, 1, 0.3, 1); }
+
+    /* Dimension bar fill animation */
+    .dim-bar-fill { transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+
+    /* Card entrance stagger */
+    .history-card {
+      opacity: 0;
+      transform: translateY(16px);
+      animation: cardIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes cardIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Expand/collapse */
+    .expand-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+      opacity: 0;
+    }
+    .expand-content.expanded {
+      max-height: 600px;
+      opacity: 1;
+    }
+
+    /* Delete button pulse */
+    .delete-btn:hover { box-shadow: 0 0 12px rgba(255, 92, 92, 0.2); }
+
+    /* Confirm dialog */
+    .confirm-overlay {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .confirm-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .history-card, .score-ring, .dim-bar-fill, .expand-content {
+        animation: none !important;
+        transition: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    }
   </style>
 </head>
-<body class="min-h-full flex flex-col noise-overlay">
+<body class="min-h-full flex flex-col grid-bg">
 
   <!-- Navbar -->
   <nav class="fixed top-0 left-0 right-0 z-50 border-b border-border" style="background: rgba(7, 8, 9, 0.85); backdrop-filter: blur(12px);">
@@ -46,14 +105,12 @@
           </span>
         </a>
       </div>
-
       <div class="hidden md:flex items-center gap-1">
         <a href="/" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-surface">Home</a>
         <a href="/analyze" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-surface">Repo's Rizz</a>
         <a href="/compare" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-surface">Repo Battle</a>
         <a href="/history" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-lime bg-surface-elevated">History</a>
       </div>
-
       <div class="flex items-center gap-3">
         <a href="https://github.com/krishna19072007/repo-rizz" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white text-sm transition-colors flex items-center gap-1">
           <i data-lucide="github" class="w-4 h-4"></i> GitHub
@@ -62,56 +119,114 @@
     </div>
   </nav>
 
-  <!-- History Content -->
-  <main class="flex-1 flex flex-col px-6 pt-24 pb-32 max-w-4xl mx-auto w-full">
-    <div class="text-center mb-12">
-      <a href="/" class="text-xs font-mono mb-8 inline-block text-gray-400 hover:text-lime transition-colors">
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col px-6 pt-24 pb-32 max-w-5xl mx-auto w-full">
+
+    <!-- Header -->
+    <div class="text-center mb-10">
+      <a href="/" class="text-xs font-mono mb-6 inline-block text-gray-400 hover:text-lime transition-colors">
         &larr; Back to Home
       </a>
-      <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-white">
+      <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-3 text-white">
         ANALYSIS <span class="text-lime">HISTORY</span>
       </h1>
       <p class="text-sm max-w-lg mx-auto text-gray-400">
-        View your past repository analyses and track improvements over time.
+        Your past repository analyses stored locally in your browser.
       </p>
     </div>
 
-    <!-- Dynamic History Container -->
+    <!-- Controls Bar -->
+    <div id="controls-bar" class="hidden mb-8 space-y-4">
+      <!-- Search + Stats Row -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+        <!-- Search -->
+        <div class="flex-1 relative">
+          <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Search repositories..."
+            class="w-full pl-11 pr-4 py-3 rounded-xl border border-border bg-surface text-white text-sm font-mono placeholder:text-gray-600 focus:outline-none focus:border-lime/40 focus:shadow-[0_0_15px_rgba(182,255,66,0.06)] transition-all"
+          >
+        </div>
+        <!-- Sort -->
+        <div class="flex items-center gap-2">
+          <select id="sort-select" class="px-4 py-3 rounded-xl border border-border bg-surface text-white text-sm font-mono focus:outline-none focus:border-lime/40 transition-all appearance-none cursor-pointer pr-8">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="highest">Highest score</option>
+            <option value="lowest">Lowest score</option>
+            <option value="alpha">A → Z</option>
+          </select>
+        </div>
+        <!-- Clear All -->
+        <button id="clear-all-btn" class="px-4 py-3 rounded-xl border border-border bg-surface text-sm font-mono text-gray-400 hover:text-coral hover:border-coral/30 transition-all flex items-center gap-2 whitespace-nowrap">
+          <i data-lucide="trash-2" class="w-4 h-4"></i> Clear All
+        </button>
+      </div>
+      <!-- Stats Bar -->
+      <div class="flex items-center gap-6 text-xs font-mono text-gray-500">
+        <span id="stat-count">0 analyses</span>
+        <span id="stat-avg" class="hidden">Avg score: <span class="text-lime">0</span></span>
+        <span id="stat-range" class="hidden">Range: <span class="text-lime">0</span> – <span class="text-coral">0</span></span>
+      </div>
+    </div>
+
+    <!-- History Container -->
     <div id="history-container" class="w-full space-y-4">
-      <!-- Empty state (default) -->
-      <div id="empty-state" class="text-center py-20">
-        <i data-lucide="clock" class="w-12 h-12 mx-auto mb-4 text-gray-600 opacity-40"></i>
-        <h2 class="text-xl font-semibold mb-2 text-white">No analyses yet</h2>
-        <p class="text-sm mb-8 text-gray-400">Analyze a repository to see it appear here.</p>
+
+      <!-- Empty State -->
+      <div id="empty-state" class="text-center py-24">
+        <div class="w-16 h-16 rounded-2xl bg-surface border border-border flex items-center justify-center mx-auto mb-6">
+          <i data-lucide="clock" class="w-8 h-8 text-gray-600"></i>
+        </div>
+        <h2 class="text-2xl font-bold mb-2 text-white">No analyses yet</h2>
+        <p class="text-sm text-gray-400 mb-8 max-w-sm mx-auto">
+          Analyze a repository and your results will appear here for quick access.
+        </p>
         <a href="/analyze" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all hover:scale-[1.02] bg-lime text-black">
           Start Analyzing <i data-lucide="arrow-right" class="w-4 h-4 text-black"></i>
         </a>
       </div>
 
-      <!-- History List (hidden by default) -->
-      <div id="history-list" class="hidden space-y-4">
-        <!-- Rendered dynamically -->
+      <!-- No Results State (search filter) -->
+      <div id="no-results" class="hidden text-center py-20">
+        <i data-lucide="search-x" class="w-10 h-10 mx-auto mb-4 text-gray-600"></i>
+        <h2 class="text-lg font-semibold mb-2 text-white">No matches found</h2>
+        <p class="text-sm text-gray-400">Try a different search term.</p>
       </div>
+
+      <!-- History List -->
+      <div id="history-list" class="hidden space-y-4"></div>
     </div>
   </main>
+
+  <!-- Delete Confirm Dialog -->
+  <div id="confirm-overlay" class="confirm-overlay fixed inset-0 z-[200] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" id="confirm-cancel-bg"></div>
+    <div class="relative w-full max-w-sm rounded-2xl border border-border bg-surface shadow-2xl p-8 flex flex-col items-center text-center z-10">
+      <div class="w-12 h-12 rounded-full bg-coral/10 flex items-center justify-center mb-4">
+        <i data-lucide="alert-triangle" class="w-6 h-6 text-coral"></i>
+      </div>
+      <h3 class="text-lg font-bold text-white mb-2" id="confirm-title">Delete analysis?</h3>
+      <p class="text-sm text-gray-400 mb-6" id="confirm-desc">This action cannot be undone.</p>
+      <div class="flex items-center gap-3 w-full">
+        <button id="confirm-cancel" class="flex-1 px-4 py-2.5 rounded-xl border border-border bg-surface-elevated text-sm font-medium text-gray-400 hover:text-white transition-colors">Cancel</button>
+        <button id="confirm-ok" class="flex-1 px-4 py-2.5 rounded-xl bg-coral text-sm font-bold text-white hover:bg-coral/90 transition-colors">Delete</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Footer -->
   <footer class="border-t border-border mt-auto py-8 bg-bg">
     <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
       <div class="flex flex-col items-center md:items-start text-center md:text-left">
-        <span class="text-lg font-bold tracking-tight text-white">
-          REPO <span class="text-lime">RIZZ</span>
-        </span>
-        <p class="text-xs mt-1 text-gray-500">
-          Advanced GitHub repository analysis for developers.
-        </p>
+        <span class="text-lg font-bold tracking-tight text-white">REPO <span class="text-lime">RIZZ</span></span>
+        <p class="text-xs mt-1 text-gray-500">Advanced GitHub repository analysis for developers.</p>
       </div>
-
       <div class="flex items-center gap-6">
         <a href="/about" class="text-sm text-gray-400 hover:text-lime transition-colors">About</a>
-        <button id="privacy-btn" class="text-sm text-gray-400 cursor-not-allowed transition-opacity hover:opacity-70">
-          Privacy Policy
-        </button>
+        <a href="/privacy" class="text-sm text-gray-400 hover:text-lime transition-colors">Privacy Policy</a>
         <a href="https://github.com/krishna19072007/repo-rizz" target="_blank" rel="noopener noreferrer" class="text-sm text-gray-400 hover:text-lime transition-colors">GitHub</a>
       </div>
     </div>
@@ -124,26 +239,14 @@
       <button class="absolute top-4 right-4 p-2 rounded-full text-gray-400 hover:text-white hover:bg-surface-elevated transition-colors modal-close">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
-
       <div class="relative w-32 h-32 mb-6">
         <img src="/static/logo.png" alt="Repo Rizz Logo" class="object-contain w-full h-full">
       </div>
-      
-      <h2 class="text-3xl font-bold tracking-tight mb-2 text-white">
-        REPO <span class="text-lime">RIZZ</span>
-      </h2>
-      
-      <p class="text-sm text-gray-400 mb-6">
-        AI-powered GitHub repository analysis and scoring engine.
-      </p>
-      
+      <h2 class="text-3xl font-bold tracking-tight mb-2 text-white">REPO <span class="text-lime">RIZZ</span></h2>
+      <p class="text-sm text-gray-400 mb-6">AI-powered GitHub repository analysis and scoring engine.</p>
       <div class="w-full border-t border-border pt-6 flex justify-center space-x-6">
-        <a href="https://github.com/krishna19072007/repo-rizz" target="_blank" rel="noopener noreferrer" class="text-xs font-mono tracking-wider text-gray-400 hover:text-lime transition-colors">
-          SOURCE CODE
-        </a>
-        <a href="/about" class="text-xs font-mono tracking-wider text-gray-400 hover:text-lime transition-colors">
-          ABOUT
-        </a>
+        <a href="https://github.com/krishna19072007/repo-rizz" target="_blank" rel="noopener noreferrer" class="text-xs font-mono tracking-wider text-gray-400 hover:text-lime transition-colors">SOURCE CODE</a>
+        <a href="/about" class="text-xs font-mono tracking-wider text-gray-400 hover:text-lime transition-colors">ABOUT</a>
       </div>
     </div>
   </div>
@@ -151,33 +254,328 @@
   <script src="/static/app.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      const history = JSON.parse(localStorage.getItem("analysis_history") || "[]");
-      const emptyState = document.getElementById("empty-state");
-      const historyList = document.getElementById("history-list");
+      const STORAGE_KEY = "analysis_history";
+      const DIM_META = {
+        documentation: { label: "Docs", color: "#b6ff42" },
+        codeQuality:   { label: "Code", color: "#8b5cf6" },
+        architecture:  { label: "Arch", color: "#b6ff42" },
+        security:      { label: "Sec",  color: "#ff5c5c" },
+        testing:       { label: "Test", color: "#8b5cf6" },
+        maintainability:{ label: "Maint", color: "#b6ff42" },
+        activity:      { label: "Act",  color: "#8b5cf6" },
+        community:     { label: "Comm", color: "#b6ff42" },
+      };
 
-      if (history.length > 0) {
-        emptyState.classList.add("hidden");
-        historyList.classList.remove("hidden");
+      let allHistory = [];
+      let filteredHistory = [];
+      let pendingDeleteId = null;
 
-        historyList.innerHTML = history.map(item => `
-          <div class="p-6 rounded-2xl border border-border bg-surface hover:border-lime/30 transition-all flex items-center justify-between">
-            <div class="space-y-1">
-              <h3 class="text-lg font-bold text-white">${item.owner}/<span class="text-lime">${item.name}</span></h3>
-              <p class="text-xs text-gray-500">Analyzed on ${new Date(item.time).toLocaleDateString()} at ${new Date(item.time).toLocaleTimeString()}</p>
+      const searchInput   = document.getElementById("search-input");
+      const sortSelect    = document.getElementById("sort-select");
+      const clearAllBtn   = document.getElementById("clear-all-btn");
+      const controlsBar   = document.getElementById("controls-bar");
+      const emptyState    = document.getElementById("empty-state");
+      const noResults     = document.getElementById("no-results");
+      const historyList   = document.getElementById("history-list");
+      const confirmOverlay = document.getElementById("confirm-overlay");
+      const confirmCancel = document.getElementById("confirm-cancel");
+      const confirmOk     = document.getElementById("confirm-ok");
+      const confirmBg     = document.getElementById("confirm-cancel-bg");
+      const statCount     = document.getElementById("stat-count");
+      const statAvg       = document.getElementById("stat-avg");
+      const statRange     = document.getElementById("stat-range");
+
+      function loadData() {
+        allHistory = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      }
+
+      function saveData() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(allHistory));
+      }
+
+      function timeAgo(ts) {
+        const diff = Date.now() - ts;
+        const mins = Math.floor(diff / 60000);
+        if (mins < 1) return "just now";
+        if (mins < 60) return `${mins}m ago`;
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) return `${hrs}h ago`;
+        const days = Math.floor(hrs / 24);
+        if (days < 30) return `${days}d ago`;
+        return new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      }
+
+      function getScoreColor(score) {
+        if (score >= 80) return "#b6ff42";
+        if (score >= 60) return "#8b5cf6";
+        if (score >= 40) return "#b6ff42";
+        return "#ff5c5c";
+      }
+
+      function getStatusLabel(status, score) {
+        const s = String(status || "").toLowerCase().replace(/_/g, "");
+        if (s === "exceptional" || s === "ready" || score >= 80) return "READY";
+        if (s === "almostready" || s === "mostlyready" || score >= 60) return "ALMOST READY";
+        if (s === "needswork" || score >= 40) return "NEEDS WORK";
+        return "NOT READY";
+      }
+
+      function getStatusColor(status, score) {
+        const s = String(status || "").toLowerCase().replace(/_/g, "");
+        if (s === "exceptional" || s === "ready" || score >= 80) return "text-lime";
+        if (s === "almostready" || s === "mostlyready" || score >= 60) return "text-violet";
+        return "text-coral";
+      }
+
+      function getScoreRingDashoffset(score) {
+        const circumference = 2 * Math.PI * 42;
+        return circumference - (score / 100) * circumference;
+      }
+
+      function renderCard(item, index) {
+        const score = item.score || 0;
+        const color = getScoreColor(score);
+        const statusLabel = getStatusLabel(item.status, score);
+        const statusColor = getStatusColor(item.status, score);
+        const dashOffset = getScoreRingDashoffset(score);
+        const hasDims = item.dimensions && Object.keys(item.dimensions).length > 0;
+
+        let dimsHtml = "";
+        if (hasDims) {
+          const dimEntries = Object.entries(item.dimensions);
+          dimsHtml = `
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+              ${dimEntries.map(([id, val]) => {
+                const meta = DIM_META[id] || { label: id, color: "#b6ff42" };
+                return `
+                  <div class="p-3 rounded-xl bg-bg border border-border">
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="text-[9px] font-mono text-gray-500 uppercase tracking-widest">${meta.label}</span>
+                      <span class="text-sm font-mono font-bold" style="color: ${meta.color}">${val}</span>
+                    </div>
+                    <div class="h-1 w-full bg-surface-elevated rounded-full overflow-hidden">
+                      <div class="h-full rounded-full dim-bar-fill" style="width: ${val}%; background: ${meta.color};"></div>
+                    </div>
+                  </div>
+                `;
+              }).join("")}
             </div>
-            <div class="flex items-center gap-6">
-              <div class="text-right">
-                <span class="text-3xl font-bold font-mono text-lime">${item.score}</span>
-                <span class="text-xs text-gray-500 font-mono">/100</span>
+          `;
+        }
+
+        let verdictHtml = "";
+        if (item.rizzVerdict) {
+          verdictHtml = `
+            <div class="mt-4 p-4 rounded-xl bg-bg border border-border">
+              <span class="text-[9px] font-mono text-lime uppercase tracking-widest block mb-1">Rizz Verdict</span>
+              <p class="text-sm text-gray-300 italic leading-relaxed">"${item.rizzVerdict}"</p>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="history-card rounded-2xl border border-border bg-surface hover:border-lime/20 transition-all overflow-hidden" style="animation-delay: ${index * 60}ms;">
+            <!-- Main Row -->
+            <div class="flex items-center gap-5 p-5 cursor-pointer" data-expand="${item.id || item.time}">
+              <!-- Score Ring -->
+              <div class="relative flex-shrink-0 w-16 h-16">
+                <svg width="64" height="64" viewBox="0 0 100 100" class="transform -rotate-90">
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="6"/>
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="${color}" stroke-width="6" stroke-linecap="round"
+                    stroke-dasharray="${2 * Math.PI * 42}" stroke-dashoffset="${dashOffset}"
+                    class="score-ring"/>
+                </svg>
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <span class="text-base font-mono font-bold" style="color: ${color}">${score}</span>
+                </div>
               </div>
-              <a href="/analyze?repo=${item.owner}/${item.name}" class="p-3 rounded-xl bg-surface-elevated hover:bg-surface-elevated/80 border border-border text-white transition-all flex items-center justify-center">
-                <i data-lucide="arrow-right" class="w-4 h-4 text-lime"></i>
-              </a>
+
+              <!-- Info -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="text-base font-bold text-white truncate">${item.owner}/<span class="text-lime">${item.name}</span></h3>
+                  <span class="text-[9px] font-mono px-2 py-0.5 rounded-full border border-border ${statusColor} bg-surface-elevated flex-shrink-0">${statusLabel}</span>
+                </div>
+                <p class="text-xs text-gray-500 font-mono">${timeAgo(item.time)}${item.criticalCount ? ` · <span class="text-coral">${item.criticalCount} critical</span>` : ""}</p>
+                ${item.summary ? `<p class="text-xs text-gray-400 mt-1 line-clamp-1">${item.summary}</p>` : ""}
+              </div>
+
+              <!-- Actions -->
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <a href="/analyze?repo=${item.owner}/${item.name}" onclick="event.stopPropagation()" title="Re-analyze"
+                   class="p-2.5 rounded-xl bg-surface-elevated hover:bg-surface-elevated/80 border border-border text-white transition-all hover:border-lime/30">
+                  <i data-lucide="refresh-cw" class="w-4 h-4 text-lime"></i>
+                </a>
+                <button onclick="event.stopPropagation(); requestDelete('${item.id || item.time}')" title="Delete"
+                   class="delete-btn p-2.5 rounded-xl bg-surface-elevated hover:bg-surface-elevated/80 border border-border text-white transition-all hover:border-coral/30">
+                  <i data-lucide="trash-2" class="w-4 h-4 text-gray-500 hover:text-coral"></i>
+                </button>
+                <button onclick="event.stopPropagation()" data-expand="${item.id || item.time}"
+                   class="p-2.5 rounded-xl bg-surface-elevated hover:bg-surface-elevated/80 border border-border text-white transition-all expand-toggle">
+                  <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 expand-icon transition-transform"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Expandable Detail -->
+            <div class="expand-content" data-detail="${item.id || item.time}">
+              <div class="px-5 pb-5 border-t border-border pt-4">
+                ${dimsHtml}
+                ${verdictHtml}
+                <div class="flex items-center justify-between mt-4 pt-3 border-t border-border">
+                  <span class="text-[10px] font-mono text-gray-600">Analyzed ${new Date(item.time).toLocaleString()}</span>
+                  <a href="/analyze?repo=${item.owner}/${item.name}" class="text-[10px] font-mono text-lime hover:underline">View full report →</a>
+                </div>
+              </div>
             </div>
           </div>
-        `).join("");
+        `;
+      }
+
+      function render() {
+        // Sort
+        const sort = sortSelect.value;
+        filteredHistory = [...allHistory];
+        filteredHistory.sort((a, b) => {
+          switch (sort) {
+            case "newest":  return b.time - a.time;
+            case "oldest":  return a.time - b.time;
+            case "highest": return (b.score || 0) - (a.score || 0);
+            case "lowest":  return (a.score || 0) - (b.score || 0);
+            case "alpha":   return (a.fullName || "").localeCompare(b.fullName || "");
+            default: return b.time - a.time;
+          }
+        });
+
+        // Filter by search
+        const query = (searchInput.value || "").toLowerCase().trim();
+        if (query) {
+          filteredHistory = filteredHistory.filter(h =>
+            (h.fullName || `${h.owner}/${h.name}`).toLowerCase().includes(query) ||
+            (h.summary || "").toLowerCase().includes(query)
+          );
+        }
+
+        // Update stats
+        statCount.textContent = `${filteredHistory.length} analysis${filteredHistory.length !== 1 ? "es" : ""}`;
+        if (allHistory.length > 0) {
+          const scores = allHistory.map(h => h.score || 0);
+          const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+          statAvg.classList.remove("hidden");
+          statAvg.innerHTML = `Avg score: <span class="text-lime">${avg}</span>`;
+          statRange.classList.remove("hidden");
+          statRange.innerHTML = `Range: <span class="text-lime">${Math.max(...scores)}</span> – <span class="text-coral">${Math.min(...scores)}</span>`;
+        } else {
+          statAvg.classList.add("hidden");
+          statRange.classList.add("hidden");
+        }
+
+        // Show/hide states
+        if (allHistory.length === 0) {
+          emptyState.classList.remove("hidden");
+          controlsBar.classList.add("hidden");
+          historyList.classList.add("hidden");
+          noResults.classList.add("hidden");
+          return;
+        }
+
+        emptyState.classList.add("hidden");
+        controlsBar.classList.remove("hidden");
+
+        if (filteredHistory.length === 0) {
+          historyList.classList.add("hidden");
+          noResults.classList.remove("hidden");
+          return;
+        }
+
+        noResults.classList.add("hidden");
+        historyList.classList.remove("hidden");
+        historyList.innerHTML = filteredHistory.map((item, i) => renderCard(item, i)).join("");
+
+        // Bind expand toggles
+        document.querySelectorAll("[data-expand]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const id = btn.getAttribute("data-expand");
+            const detail = document.querySelector(`[data-detail="${id}"]`);
+            const icon = btn.querySelector(".expand-icon");
+            if (!detail) return;
+            const isExpanded = detail.classList.contains("expanded");
+            // Close all others
+            document.querySelectorAll(".expand-content.expanded").forEach(el => el.classList.remove("expanded"));
+            document.querySelectorAll(".expand-icon").forEach(el => el.style.transform = "");
+            if (!isExpanded) {
+              detail.classList.add("expanded");
+              if (icon) icon.style.transform = "rotate(180deg)";
+            }
+          });
+        });
+
         lucide.createIcons();
       }
+
+      // --- Delete flow ---
+      window.requestDelete = function(id) {
+        pendingDeleteId = id;
+        const item = allHistory.find(h => (h.id || h.time) == id);
+        if (item) {
+          document.getElementById("confirm-title").textContent = `Delete ${item.owner}/${item.name}?`;
+          document.getElementById("confirm-desc").textContent = "This will remove the analysis from your history.";
+        }
+        confirmOverlay.classList.add("show");
+      };
+
+      confirmCancel.addEventListener("click", () => {
+        confirmOverlay.classList.remove("show");
+        pendingDeleteId = null;
+      });
+      confirmBg.addEventListener("click", () => {
+        confirmOverlay.classList.remove("show");
+        pendingDeleteId = null;
+      });
+      confirmOk.addEventListener("click", () => {
+        if (pendingDeleteId !== null) {
+          allHistory = allHistory.filter(h => (h.id || h.time) != pendingDeleteId);
+          saveData();
+          render();
+        }
+        confirmOverlay.classList.remove("show");
+        pendingDeleteId = null;
+      });
+
+      // --- Clear all ---
+      clearAllBtn.addEventListener("click", () => {
+        pendingDeleteId = "__ALL__";
+        document.getElementById("confirm-title").textContent = "Clear all history?";
+        document.getElementById("confirm-desc").textContent = "This will permanently remove all analyses from your browser.";
+        confirmOverlay.classList.add("show");
+      });
+      // Override confirm OK for clear all
+      const origConfirmOk = confirmOk.onclick;
+      confirmOk.addEventListener("click", () => {
+        if (pendingDeleteId === "__ALL__") {
+          allHistory = [];
+          saveData();
+          render();
+          confirmOverlay.classList.remove("show");
+          pendingDeleteId = null;
+        }
+      });
+
+      // --- Search + Sort ---
+      searchInput.addEventListener("input", render);
+      sortSelect.addEventListener("change", render);
+
+      // Escape closes confirm
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          confirmOverlay.classList.remove("show");
+          pendingDeleteId = null;
+        }
+      });
+
+      // Init
+      loadData();
+      render();
     });
   </script>
 </body>

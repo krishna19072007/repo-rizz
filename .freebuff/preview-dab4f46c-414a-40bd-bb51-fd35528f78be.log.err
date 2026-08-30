@@ -1,0 +1,4 @@
+[browser] THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[browser] Image with src "/logo.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[browser] Image with src "/logo.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[browser] THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.

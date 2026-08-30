@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — Repo Rizz</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: '#070809',
+            surface: '#0f1115',
+            'surface-elevated': '#181b21',
+            border: '#272a30',
+            lime: '#b6ff42',
+            violet: '#8b5cf6',
+            coral: '#ff5c5c',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #070809; color: #ffffff; font-family: ui-sans-serif, system-ui, sans-serif; }
+  </style>
+</head>
+<body class="min-h-full flex flex-col">
+
+  <!-- Navbar -->
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-border" style="background: rgba(7, 8, 9, 0.85); backdrop-filter: blur(12px);">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-3">
+        <img src="/static/logo.png" alt="Repo Rizz Logo" class="w-8 h-8 object-contain">
+        <span class="text-lg font-semibold tracking-tight">REPO <span class="text-lime">RIZZ</span></span>
+      </a>
+      <a href="/" class="text-sm text-gray-400 hover:text-lime transition-colors">&larr; Back to Home</a>
+    </div>
+  </nav>
+
+  <!-- Content -->
+  <main class="flex-1 pt-24 pb-16 px-6 max-w-3xl mx-auto w-full">
+    <h1 class="text-3xl font-bold text-white mb-2">Privacy Policy</h1>
+    <p class="text-xs font-mono text-gray-500 mb-8">Last updated: August 2026</p>
+
+    <div class="space-y-6 text-sm text-gray-400 leading-relaxed">
+      <section>
+        <h2 class="text-lg font-bold text-white mb-2">Data Collection</h2>
+        <p>Repo Rizz analyzes <strong class="text-white">public GitHub repositories only</strong>. We fetch publicly available repository metadata (file tree, README, package.json, etc.) via the GitHub API. No private data is accessed.</p>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-bold text-white mb-2">No Account Required</h2>
+        <p>Repo Rizz does not require user accounts, login, or personal information. Analyses are performed on-demand and are not stored persistently unless you choose to save them locally in your browser.</p>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-bold text-white mb-2">Local Storage</h2>
+        <p>Analysis history may be stored in your browser's <code class="text-lime bg-surface px-1 rounded">localStorage</code> for your convenience. This data never leaves your device.</p>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-bold text-white mb-2">Third-Party Services</h2>
+        <p>We use the <strong class="text-white">GitHub API</strong> to fetch repository data and an optional <strong class="text-white">AI provider</strong> for enhanced insights. API keys are stored server-side only and are never exposed to the client.</p>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-bold text-white mb-2">Contact</h2>
+        <p>For privacy concerns, open an issue on our <a href="https://github.com/krishna19072007/repo-rizz" class="text-lime hover:underline" target="_blank" rel="noopener noreferrer">GitHub repository</a>.</p>
+      </section>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-border py-8 bg-bg">
+    <div class="max-w-7xl mx-auto px-6 text-center">
+      <span class="text-lg font-bold tracking-tight text-white">REPO <span class="text-lime">RIZZ</span></span>
+    </div>
+  </footer>
+
+  <script>if (typeof lucide !== 'undefined') lucide.createIcons();</script>
+</body>
+</html>

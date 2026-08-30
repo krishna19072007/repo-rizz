@@ -2,6 +2,7 @@
 <html lang="en" class="h-full scroll-smooth">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Repo Rizz — Futuristic GitHub Analytics & Scoring</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -266,18 +267,22 @@
             <div class="p-4 rounded-xl border border-border bg-surface flex flex-col justify-between h-[100px]">
               <span class="text-[9px] font-mono text-gray-500 uppercase tracking-widest mb-1">DOCUMENTATION</span>
               <span class="text-xl font-mono font-bold text-lime">88</span>
+              <span class="text-[8px] font-mono text-gray-600">DEMO</span>
             </div>
             <div class="p-4 rounded-xl border border-border bg-surface flex flex-col justify-between h-[100px]">
               <span class="text-[9px] font-mono text-gray-500 uppercase tracking-widest mb-1">CODE QUALITY</span>
               <span class="text-xl font-mono font-bold text-violet">82</span>
+              <span class="text-[8px] font-mono text-gray-600">DEMO</span>
             </div>
             <div class="p-4 rounded-xl border border-border bg-surface flex flex-col justify-between h-[100px]">
               <span class="text-[9px] font-mono text-gray-500 uppercase tracking-widest mb-1">SECURITY</span>
               <span class="text-xl font-mono font-bold text-coral">74</span>
+              <span class="text-[8px] font-mono text-gray-600">DEMO</span>
             </div>
             <div class="p-4 rounded-xl border border-border bg-surface flex flex-col justify-between h-[100px]">
               <span class="text-[9px] font-mono text-gray-500 uppercase tracking-widest mb-1">ARCHITECTURE</span>
               <span class="text-xl font-mono font-bold text-white">91</span>
+              <span class="text-[8px] font-mono text-gray-600">DEMO</span>
             </div>
           </div>
         </div>
@@ -857,9 +862,7 @@
 
       <div class="flex items-center gap-6">
         <a href="/about" class="text-sm text-gray-400 hover:text-lime transition-colors">About</a>
-        <button id="privacy-btn" class="text-sm text-gray-400 cursor-not-allowed transition-opacity hover:opacity-70">
-          Privacy Policy
-        </button>
+        <a href="/privacy" class="text-sm text-gray-400 hover:text-lime transition-colors">Privacy Policy</a>
         <a href="https://github.com/krishna19072007/repo-rizz" target="_blank" rel="noopener noreferrer" class="text-sm text-gray-400 hover:text-lime transition-colors">GitHub</a>
       </div>
     </div>
@@ -899,17 +902,6 @@
   <script src="/static/app.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      // --- Helper: parseGitHubUrl ---
-      function parseGitHubUrlHelper(input) {
-        const trimmed = input.trim();
-        const urlRegex = /^(?:https?:\/\/)?(?:www\.)?github\.com\/([a-zA-Z0-9._-]+)\/([a-zA-Z0-9._-]+)(?:\/.*)?$/;
-        const shortRegex = /^([a-zA-Z0-9._-]+)\/([a-zA-Z0-9._-]+)$/;
-        const match = trimmed.match(urlRegex) || trimmed.match(shortRegex);
-        if (match) {
-          return { owner: match[1], name: match[2].replace(/\.git$/, "") };
-        }
-        return null;
-      }
 
       // --- 1. Hero Entrance Sequence Staggered ---
       function runHeroEntrance() {
@@ -1298,6 +1290,12 @@
       function setupVerdictAnimation() {
         const container = document.getElementById("verdict-quote-container");
         if (!container) return;
+
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          container.classList.remove("opacity-0", "translate-y-4");
+          container.classList.add("opacity-100", "translate-y-0");
+          return;
+        }
 
         const observer = new IntersectionObserver((entries) => {
           entries.forEach(entry => {
