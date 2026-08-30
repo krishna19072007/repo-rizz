@@ -10,8 +10,10 @@ async def run_analysis(input_data: dict) -> dict:
 
     # 1. Classification
     classification = classify_repository(input_data)
+    input_data["classification"] = classification
     
     # Run analyzers
+    testing_dim = analyze_testing(input_data)
     dimensions = [
         analyze_documentation(input_data),
         analyze_code_quality(input_data),
@@ -21,14 +23,18 @@ async def run_analysis(input_data: dict) -> dict:
 
     # Add to input_data so scoring.py can find it
     input_data["dimension_scores"] = dimensions
-    input_data["classification"] = classification
     
     # 2. Base Dimensions
     scoring_result = calculate_repository_score(input_data)
     all_dimensions = scoring_result["dimensions"]
     raw_metrics_combined = {}
     for d in all_dimensions: raw_metrics_combined.update(d.get('rawMetrics', {}))
+    raw_metrics_combined.update(testing_dim.get('rawMetrics', {}))
     
+    # Ensure hasTests fallback is explicitly mapped
+    if not raw_metrics_combined.get('hasTests') and raw_metrics_combined.get('testFileCount', 0) > 0:
+        raw_metrics_combined['hasTests'] = True
+        
     for d in all_dimensions:
         all_limitations.extend(d.get("limitations", []))
 
@@ -115,6 +121,9 @@ async def run_analysis(input_data: dict) -> dict:
         "resumeReadinessStrengths": rr_result.get("strengths", []),
         "resumeReadinessWeaknesses": rr_result.get("weaknesses", []),
         "resumeReadinessBeforeResume": rr_result.get("beforeResume", []),
+        "resumeReadinessTotalEarned": rr_result.get("totalEarned", 0),
+        "resumeReadinessTotalMax": rr_result.get("totalMax", 0),
+        "resumeReadinessBreakdown": rr_result.get("breakdown", {}),
         "engineeringDimensions": all_dimensions,
         "resumeReadinessDimension": resume_readiness_dimension,
         "dimensions": all_dimensions + [resume_readiness_dimension],

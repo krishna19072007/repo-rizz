@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compare Repositories | Repo Rizz</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: '#070809',
+            surface: '#0f1115',
+            'surface-elevated': '#181b21',
+            border: '#272a30',
+            lime: '#b6ff42',
+            violet: '#8b5cf6',
+            coral: '#ff5c5c',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #070809;
+      color: #ffffff;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+  </style>
+</head>
+<body class="min-h-full flex flex-col noise-overlay">
+
+  <!-- Navbar -->
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-border" style="background: rgba(7, 8, 9, 0.85); backdrop-filter: blur(12px);">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <button id="logo-btn" class="relative w-8 h-8 focus:outline-none focus:ring-2 focus:ring-lime rounded-sm transition-transform hover:scale-105">
+          <img src="/static/logo.png" alt="Repo Rizz Logo" class="object-contain w-full h-full">
+        </button>
+        <a href="/" class="flex items-center">
+          <span class="text-lg font-semibold tracking-tight hover:opacity-80 transition-opacity">
+            REPO <span class="text-lime">RIZZ</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="hidden md:flex items-center gap-1">
+        <a href="/" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-surface">Home</a>
+        <a href="/analyze" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-surface">Repo's Rizz</a>
+        <a href="/compare" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-lime bg-surface-elevated">Repo Battle</a>
+        <a href="/history" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-surface">History</a>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="https://github.com/krishna19072007/repo-rizz" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white text-sm transition-colors flex items-center gap-1">
+          <i data-lucide="github" class="w-4 h-4"></i> GitHub
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Compare Page View -->
+  <main class="flex-1 flex flex-col px-6 pt-24 pb-32 max-w-4xl mx-auto w-full">
+    
+    <!-- Header (always shown on input page) -->
+    <div id="compare-header" class="text-center mb-16">
+      <a href="/" class="text-xs font-mono mb-8 inline-block text-gray-400 hover:text-lime transition-colors">
+        &larr; Back to Home
+      </a>
+      <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-white">
+        COMPARE <span class="text-lime">REPOSITORIES</span>
+      </h1>
+      <p class="text-sm max-w-lg mx-auto text-gray-400">
+        Compare two repositories side-by-side to see how they stack up against each other.
+      </p>
+    </div>
+
+    <!-- Input view state -->
+    <div id="input-view" class="space-y-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+        <div>
+          <label class="text-xs font-mono mb-2 block text-gray-400">REPOSITORY 1</label>
+          <div class="flex items-center rounded-xl border border-border p-3 bg-surface">
+            <input type="text" id="repo1-input" placeholder="owner/repo or full GitHub link" class="flex-1 bg-transparent outline-none font-mono text-sm text-white placeholder:text-gray-600">
+          </div>
+        </div>
+        
+        <div class="flex items-center justify-center pb-2">
+          <i data-lucide="git-compare" class="w-6 h-6 text-gray-400"></i>
+        </div>
+
+        <div>
+          <label class="text-xs font-mono mb-2 block text-gray-400">REPOSITORY 2</label>
+          <div class="flex items-center rounded-xl border border-border p-3 bg-surface">
+            <input type="text" id="repo2-input" placeholder="owner/repo or full GitHub link" class="flex-1 bg-transparent outline-none font-mono text-sm text-white placeholder:text-gray-600">
+          </div>
+        </div>
+      </div>
+
+      <div class="text-center mt-8">
+        <button id="compare-btn" class="inline-flex items-center gap-2 px-8 py-3 rounded-xl font-semibold text-sm transition-all hover:scale-[1.02] active:scale-[0.98] bg-lime text-black">
+          COMPARE <i data-lucide="arrow-right" class="w-4 h-4 text-black"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading view state -->
+    <div id="loading-view" class="hidden flex flex-col items-center justify-center py-20 space-y-6">
+      <div class="relative w-16 h-16 flex items-center justify-center">
+        <div class="absolute inset-0 rounded-full border-4 border-lime/10 animate-ping"></div>
+        <div class="w-12 h-12 rounded-full border-4 border-lime border-t-transparent animate-spin"></div>
+      </div>
+      <p class="text-sm font-mono text-lime animate-pulse">Analyzing both repositories...</p>
+    </div>
+
+    <!-- Error view state -->
+    <div id="error-view" class="hidden p-4 rounded-xl border border-coral/30 text-center bg-surface max-w-lg mx-auto w-full mt-8">
+      <p class="text-sm font-semibold mb-1 text-coral">Comparison Failed</p>
+      <p id="error-msg" class="text-xs text-gray-400"></p>
+      <button id="retry-btn" class="inline-flex items-center gap-2 mt-3 text-xs font-mono text-gray-400 hover:text-lime transition-colors">
+        <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Try Again
+      </button>
+    </div>
+
+    <!-- Results view state -->
+    <div id="results-view" class="hidden space-y-8 w-full">
+      <div class="flex items-center justify-between mb-8">
+        <button id="back-btn" class="flex items-center gap-2 text-sm text-gray-400 hover:text-lime transition-colors">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i> Compare Again
+        </button>
+      </div>
+
+      <!-- Verdict Card -->
+      <div id="verdict-card" class="rounded-2xl border p-6 bg-surface space-y-4">
+        <p class="text-[10px] font-mono tracking-[0.2em] text-gray-400">COMPARISON VERDICT</p>
+        <div class="text-center">
+          <p id="verdict-title" class="text-lg font-bold text-lime"></p>
+        </div>
+        <div id="dimension-leaders" class="hidden">
+          <p class="text-[10px] font-mono mb-2 text-gray-400">DIMENSION LEADERS</p>
+          <div id="leaders-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 pt-2">
+          <div class="text-center p-3 rounded-lg bg-surface-elevated">
+            <p id="r1-name" class="text-[10px] font-mono text-gray-400"></p>
+            <p id="r1-score" class="text-2xl font-bold font-mono text-lime"></p>
+          </div>
+          <div class="text-center p-3 rounded-lg bg-surface-elevated">
+            <p id="r2-name" class="text-[10px] font-mono text-gray-400"></p>
+            <p id="r2-score" class="text-2xl font-bold font-mono text-lime"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side-by-side repository cards -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div id="repo1-card"></div>
+        <div id="repo2-card"></div>
+      </div>
+      
+      <div class="text-center pt-8 mt-8 border-t border-border">
+        <p id="scoring-version-footer" class="text-xs font-mono text-gray-400"></p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-border mt-auto py-8 bg-bg">
+    <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex flex-col items-center md:items-start text-center md:text-left">
+        <span class="text-lg font-bold tracking-tight text-white">
+          REPO <span class="text-lime">RIZZ</span>
+        </span>
+        <p class="text-xs mt-1 text-gray-500">
+          Advanced GitHub repository analysis for developers.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-6">
+        <a href="/about" class="text-sm text-gray-400 hover:text-lime transition-colors">About</a>
+        <button id="privacy-btn" class="text-sm text-gray-400 cursor-not-allowed transition-opacity hover:opacity-70">
+          Privacy Policy
+        </button>
+        <a href="https://github.com/krishna19072007/repo-rizz" target="_blank" rel="noopener noreferrer" class="text-sm text-gray-400 hover:text-lime transition-colors">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Brand Modal -->
+  <div id="brand-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm modal-close"></div>
+    <div class="relative w-full max-w-md rounded-2xl overflow-hidden border border-border bg-surface shadow-2xl p-10 flex flex-col items-center text-center z-10">
+      <button class="absolute top-4 right-4 p-2 rounded-full text-gray-400 hover:text-white hover:bg-surface-elevated transition-colors modal-close">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="relative w-32 h-32 mb-6">
+        <img src="/static/logo.png" alt="Repo Rizz Logo" class="object-contain w-full h-full">
+      </div>
+      
+      <h2 class="text-3xl font-bold tracking-tight mb-2 text-white">
+        REPO <span class="text-lime">RIZZ</span>
+      </h2>
+      
+      <p class="text-sm text-gray-400 mb-6">
+        AI-powered GitHub repository analysis and scoring engine.
+      </p>
+      
+      <div class="w-full border-t border-border pt-6 flex justify-center space-x-6">
+        <a href="https://github.com/krishna19072007/repo-rizz" target="_blank" rel="noopener noreferrer" class="text-xs font-mono tracking-wider text-gray-400 hover:text-lime transition-colors">
+          SOURCE CODE
+        </a>
+        <a href="/about" class="text-xs font-mono tracking-wider text-gray-400 hover:text-lime transition-colors">
+          ABOUT
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+  <script>
+    function getResumeReadinessLabel(status, score) {
+      const s = String(status).toLowerCase().replace(/_/g, "");
+      if (s === "exceptional" || s === "ready" || score >= 80) return "READY";
+      if (s === "almostready" || s === "mostlyready" || score >= 60) return "ALMOST READY";
+      if (s === "needswork" || score >= 40) return "NEEDS WORK";
+      return "NOT READY";
+    }
+
+    function getResumeReadinessColor(status, score) {
+      const s = String(status).toLowerCase().replace(/_/g, "");
+      if (s === "exceptional" || s === "ready" || score >= 80) return "#b6ff42"; // lime
+      if (s === "almostready" || s === "mostlyready" || score >= 60) return "#8b5cf6"; // violet
+      return "#ff5c5c"; // coral
+    }
+
+    function renderCompareScoreBar(score, maxScore, label) {
+      const pct = maxScore > 0 ? (score / maxScore) * 100 : 0;
+      const color = pct >= 80 ? 'text-lime' : pct >= 60 ? 'text-violet' : 'text-coral';
+      const bgColor = pct >= 80 ? 'bg-lime' : pct >= 60 ? 'bg-violet' : 'bg-coral';
+      return `
+        <div class="space-y-1">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-mono text-gray-400">${label}</span>
+            <span class="text-[11px] font-mono font-bold ${color}">${Math.round(score)}/${maxScore}</span>
+          </div>
+          <div class="h-1.5 rounded-full overflow-hidden bg-surface-elevated">
+            <div class="h-full rounded-full ${bgColor}" style="width: ${pct}%"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderCompareRepoCard(result, side) {
+      const score = result.resumeReadinessScore;
+      const status = result.resumeReadinessStatus;
+      const rrColorClass = score >= 80 ? 'text-lime' : score >= 60 ? 'text-violet' : 'text-coral';
+      const rrColor = getResumeReadinessColor(status, score);
+      const label = getResumeReadinessLabel(status, score);
+
+      return `
+        <div class="rounded-2xl border border-border p-6 space-y-6 bg-surface">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[10px] font-mono text-gray-400">REPOSITORY ${side === 'left' ? '1' : '2'}</span>
+              <a href="https://github.com/${result.repository.owner}/${result.repository.name}" target="_blank" rel="noopener noreferrer" class="text-[10px] font-mono transition-colors hover:text-lime text-gray-400">
+                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+              </a>
+            </div>
+            <h3 class="text-lg font-bold text-white">
+              ${result.repository.owner}/<span class="${side === 'left' ? 'text-lime' : 'text-violet'}">${result.repository.name}</span>
+            </h3>
+            ${result.repository.description ? `<p class="text-xs mt-1 text-gray-400">${result.repository.description}</p>` : ''}
+          </div>
+
+          <div class="flex items-center gap-4">
+            <div class="text-center">
+              <p class="text-4xl font-bold font-mono" style="color: ${rrColor}">${score}</p>
+              <p class="text-[10px] font-mono text-gray-400">/100 · ${label}</p>
+            </div>
+            <div class="flex-1">
+              <div class="px-2 py-1 rounded text-[10px] font-mono inline-block mb-2 bg-surface-elevated text-gray-400">
+                ${result.repositoryType?.type?.replace(/_/g, " ") || "GENERAL"}
+              </div>
+              <p class="text-xs text-gray-400">${result.resumeReadinessSummary || ''}</p>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            ${result.engineeringDimensions.map(dim => renderCompareScoreBar(dim.score, dim.maxScore, dim.name)).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const compareBtn = document.getElementById("compare-btn");
+      const repo1Input = document.getElementById("repo1-input");
+      const repo2Input = document.getElementById("repo2-input");
+      
+      const compareHeader = document.getElementById("compare-header");
+      const inputView = document.getElementById("input-view");
+      const loadingView = document.getElementById("loading-view");
+      const errorView = document.getElementById("error-view");
+      const resultsView = document.getElementById("results-view");
+      
+      const errorMsg = document.getElementById("error-msg");
+      const retryBtn = document.getElementById("retry-btn");
+      const backBtn = document.getElementById("back-btn");
+
+      async function triggerComparison() {
+        const r1 = repo1Input.value.trim();
+        const r2 = repo2Input.value.trim();
+        if (!r1 || !r2) {
+          alert("Please enter two GitHub repository URLs.");
+          return;
+        }
+
+        const p1 = parseGitHubUrlHelper(r1);
+        const p2 = parseGitHubUrlHelper(r2);
+
+        if (!p1 || !p2) {
+          alert("One or both repositories are invalid.");
+          return;
+        }
+
+        compareHeader.classList.add("hidden");
+        inputView.classList.add("hidden");
+        errorView.classList.add("hidden");
+        loadingView.classList.remove("hidden");
+
+        try {
+          const [res1, res2] = await Promise.all([
+            fetch('/analyze', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ owner: p1.owner, name: p1.name })
+            }),
+            fetch('/analyze', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ owner: p2.owner, name: p2.name })
+            })
+          ]);
+
+          if (!res1.ok || !res2.ok) {
+            const errRes = !res1.ok ? res1 : res2;
+            const errData = await errRes.json().catch(() => ({}));
+            throw new Error(errData.detail || errData.error || "Analysis failed for one or both repositories.");
+          }
+
+          const data1 = await res1.json();
+          const data2 = await res2.json();
+
+          const result1 = data1.result;
+          const result2 = data2.result;
+
+          // Render Verdict Summary
+          const winner = result1.resumeReadinessScore > result2.resumeReadinessScore ? 1 : result1.resumeReadinessScore < result2.resumeReadinessScore ? 2 : 0;
+          const diff = Math.abs(result1.resumeReadinessScore - result2.resumeReadinessScore);
+          
+          const verdictTitle = document.getElementById("verdict-title");
+          const verdictCard = document.getElementById("verdict-card");
+          
+          if (winner === 0) {
+            verdictTitle.innerText = `It's a tie! Both scored ${result1.resumeReadinessScore}/100`;
+            verdictTitle.className = "text-lg font-bold text-violet";
+            verdictCard.style.borderColor = "var(--border)";
+          } else {
+            const winName = winner === 1 ? result1.repository.name : result2.repository.name;
+            verdictTitle.innerText = `${winName} wins by ${diff} points`;
+            verdictTitle.className = `text-lg font-bold ${winner === 1 ? 'text-lime' : 'text-violet'}`;
+            verdictCard.style.borderColor = winner === 1 ? 'var(--lime)' : 'var(--violet)';
+          }
+
+          // Calculate dimension wins
+          const dimensionWins = [];
+          result1.engineeringDimensions.forEach(d1 => {
+            const d2 = result2.engineeringDimensions.find(d => d.id === d1.id);
+            if (d2) {
+              const dDiff = d1.score - d2.score;
+              if (Math.abs(dDiff) > 5) {
+                dimensionWins.push({
+                  name: d1.name,
+                  winner: dDiff > 0 ? 1 : 2,
+                  diff: Math.abs(dDiff)
+                });
+              }
+            }
+          });
+
+          const leadersDiv = document.getElementById("dimension-leaders");
+          const leadersGrid = document.getElementById("leaders-grid");
+          if (dimensionWins.length > 0) {
+            leadersDiv.classList.remove("hidden");
+            leadersGrid.innerHTML = dimensionWins.map(dw => `
+              <div class="flex items-center justify-between p-2 rounded-lg text-xs bg-surface-elevated">
+                <span class="font-mono text-gray-400">${dw.name}</span>
+                <span class="font-mono font-bold ${dw.winner === 1 ? 'text-lime' : 'text-violet'}">
+                  ${dw.winner === 1 ? result1.repository.name : result2.repository.name} +${dw.diff}
+                </span>
+              </div>
+            `).join("");
+          } else {
+            leadersDiv.classList.add("hidden");
+          }
+
+          const color1 = getResumeReadinessColor(result1.resumeReadinessStatus, result1.resumeReadinessScore);
+          const color2 = getResumeReadinessColor(result2.resumeReadinessStatus, result2.resumeReadinessScore);
+
+          document.getElementById("r1-name").innerText = result1.repository.name;
+          document.getElementById("r1-score").innerText = result1.resumeReadinessScore;
+          document.getElementById("r1-score").style.color = color1;
+
+          document.getElementById("r2-name").innerText = result2.repository.name;
+          document.getElementById("r2-score").innerText = result2.resumeReadinessScore;
+          document.getElementById("r2-score").style.color = color2;
+
+          // Side-by-side cards
+          document.getElementById("repo1-card").innerHTML = renderCompareRepoCard(result1, "left");
+          document.getElementById("repo2-card").innerHTML = renderCompareRepoCard(result2, "right");
+
+          document.getElementById("scoring-version-footer").innerText = `DETERMINISTIC ANALYSIS · Scoring model v${result1.scoringVersion || '3.1'}`;
+
+          loadingView.classList.add("hidden");
+          resultsView.classList.remove("hidden");
+          lucide.createIcons();
+
+        } catch (err) {
+          loadingView.classList.add("hidden");
+          errorView.classList.remove("hidden");
+          errorMsg.innerText = err.message || "An unexpected error occurred.";
+        }
+      }
+
+      compareBtn.addEventListener("click", triggerComparison);
+      retryBtn.addEventListener("click", () => {
+        errorView.classList.add("hidden");
+        inputView.classList.remove("hidden");
+        compareHeader.classList.remove("hidden");
+      });
+      backBtn.addEventListener("click", () => {
+        resultsView.classList.add("hidden");
+        inputView.classList.remove("hidden");
+        compareHeader.classList.remove("hidden");
+      });
+
+      function parseGitHubUrlHelper(input) {
+        const trimmed = input.trim();
+        const urlRegex = /^(?:https?:\/\/)?(?:www\.)?github\.com\/([a-zA-Z0-9._-]+)\/([a-zA-Z0-9._-]+)(?:\/.*)?$/;
+        const shortRegex = /^([a-zA-Z0-9._-]+)\/([a-zA-Z0-9._-]+)$/;
+        const match = trimmed.match(urlRegex) || trimmed.match(shortRegex);
+        if (match) {
+          return { owner: match[1], name: match[2].replace(/\.git$/, "") };
+        }
+        return null;
+      }
+    });
+  </script>
+</body>
+</html>

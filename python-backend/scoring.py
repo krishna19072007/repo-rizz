@@ -430,6 +430,14 @@ def get_resume_readiness_status(score):
     return "not_ready"
 
 def calculate_resume_readiness(engineering_dimensions, raw_metrics, classification):
+    # Normalize key fallback mappings for raw metrics
+    if 'hasTests' not in raw_metrics:
+        raw_metrics['hasTests'] = raw_metrics.get('testFileCount', 0) > 0
+    if 'hasCI' not in raw_metrics:
+        raw_metrics['hasCI'] = raw_metrics.get('securityWorkflowCount', 0) > 0 or raw_metrics.get('hasCITests', False)
+    if 'hasDeployment' not in raw_metrics:
+        raw_metrics['hasDeployment'] = raw_metrics.get('hasDeploy', False)
+
     profile = get_profile(classification.get('type'))
     
     def is_dim_applicable(dim_id):
@@ -454,9 +462,11 @@ def calculate_resume_readiness(engineering_dimensions, raw_metrics, classificati
     evidence = []
     methodology = []
     
+    is_curated = classification.get('type') in ["CURATED_LIST", "DOCUMENTATION", "DATASET", "EDUCATIONAL"]
+
     if is_doc_applicable:
         doc_earned = 0
-        doc_max = 25
+        doc_max = 21 if is_curated else 25
         total_max += doc_max
         applicable_signals.append("Documentation")
         
@@ -473,11 +483,12 @@ def calculate_resume_readiness(engineering_dimensions, raw_metrics, classificati
             weaknesses.append("No project description")
             before_resume.append("Add a clear project description to README")
             
-        if raw_metrics.get('hasInstall'):
-            doc_earned += 4
-        else:
-            weaknesses.append("No installation instructions")
-            before_resume.append("Add setup/installation instructions")
+        if not is_curated:
+            if raw_metrics.get('hasInstall'):
+                doc_earned += 4
+            else:
+                weaknesses.append("No installation instructions")
+                before_resume.append("Add setup/installation instructions")
             
         if raw_metrics.get('hasUsage'):
             doc_earned += 4
@@ -582,17 +593,18 @@ def calculate_resume_readiness(engineering_dimensions, raw_metrics, classificati
         excluded_dimensions.append("Security")
         
     pres_earned = 0
-    pres_max = 10
+    pres_max = 3 if is_curated else 10
     total_max += pres_max
     applicable_signals.append("Presentation")
     
-    if raw_metrics.get('hasCI'):
-        pres_earned += 3
-        strengths.append("CI/CD pipeline configured")
-        
-    if raw_metrics.get('hasDeployment'):
-        pres_earned += 4
-        strengths.append("Deployment evidence present")
+    if not is_curated:
+        if raw_metrics.get('hasCI'):
+            pres_earned += 3
+            strengths.append("CI/CD pipeline configured")
+            
+        if raw_metrics.get('hasDeployment'):
+            pres_earned += 4
+            strengths.append("Deployment evidence present")
         
     if raw_metrics.get('hasLicense'):
         pres_earned += 3
@@ -652,5 +664,16 @@ def calculate_resume_readiness(engineering_dimensions, raw_metrics, classificati
         "applicableSignals": applicable_signals,
         "excludedDimensions": excluded_dimensions,
         "evidence": evidence,
-        "methodology": methodology
+        "methodology": methodology,
+        "totalEarned": total_earned,
+        "totalMax": total_max,
+        "breakdown": {
+            "documentation": {"earned": doc_earned if is_doc_applicable else 0, "max": doc_max if is_doc_applicable else 0, "applicable": is_doc_applicable},
+            "codeQuality": {"earned": cq_earned if is_code_applicable else 0, "max": cq_max if is_code_applicable else 0, "applicable": is_code_applicable},
+            "testing": {"earned": test_earned if is_testing_applicable else 0, "max": test_max if is_testing_applicable else 0, "applicable": is_testing_applicable},
+            "architecture": {"earned": arch_earned if is_arch_applicable else 0, "max": arch_max if is_arch_applicable else 0, "applicable": is_arch_applicable},
+            "security": {"earned": sec_earned if is_sec_applicable else 0, "max": sec_max if is_sec_applicable else 0, "applicable": is_sec_applicable},
+            "presentation": {"earned": pres_earned, "max": pres_max, "applicable": True},
+            "community": {"earned": comm_earned, "max": comm_max, "applicable": True}
+        }
     }

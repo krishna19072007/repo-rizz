@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Repo Rizz — Futuristic GitHub Analytics & Scoring</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: '#070809',
+            surface: '#0f1115',
+            'surface-elevated': '#181b21',
+            border: '#272a30',
+            lime: '#b6ff42',
+            violet: '#8b5cf6',
+            coral: '#ff5c5c',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #070809;
+      color: #ffffff;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    
+    /* Technical Grid background */
+    .grid-bg {
+      background-size: 50px 50px;
+      background-image: linear-gradient(to right, rgba(39, 42, 48, 0.15) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(39, 42, 48, 0.15) 1px, transparent 1px);
+      background-position: center;
+    }
+
+    /* Moving scanline across background */
+    @keyframes scanline {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(100vh); }
+    }
+    .scanline-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; height: 100px;
+      background: linear-gradient(to bottom, transparent, rgba(182, 255, 66, 0.015), transparent);
+      animation: scanline 12s linear infinite;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Keyframe Float styles */
+    @keyframes float-node-1 {
+      0%, 100% { transform: translate3d(var(--tx, 0px), var(--ty, 0px), var(--tz, 0px)) translateY(0px) rotateX(1deg) rotateY(-2deg) rotateZ(-0.5deg); }
+      50% { transform: translate3d(var(--tx, 0px), var(--ty, 0px), calc(var(--tz, 0px) + 8px)) translateY(-6px) rotateX(2deg) rotateY(-1deg) rotateZ(0.5deg); }
+    }
+    @keyframes float-node-2 {
+      0%, 100% { transform: translate3d(var(--tx, 0px), var(--ty, 0px), var(--tz, 0px)) translateY(0px) rotateX(2deg) rotateY(-3deg) rotateZ(0.5deg); }
+      50% { transform: translate3d(var(--tx, 0px), var(--ty, 0px), calc(var(--tz, 0px) + 12px)) translateY(-8px) rotateX(1deg) rotateY(-4deg) rotateZ(-0.5deg); }
+    }
+    @keyframes float-node-3 {
+      0%, 100% { transform: translate3d(var(--tx, 0px), var(--ty, 0px), var(--tz, 0px)) translateY(0px) rotateX(1deg) rotateY(2deg) rotateZ(-0.5deg); }
+      50% { transform: translate3d(var(--tx, 0px), var(--ty, 0px), calc(var(--tz, 0px) + 6px)) translateY(-4px) rotateX(2deg) rotateY(1deg) rotateZ(0.5deg); }
+    }
+
+    .animate-float-node-1 { animation: float-node-1 6s ease-in-out infinite; }
+    .animate-float-node-2 { animation: float-node-2 6.5s ease-in-out infinite; }
+    .animate-float-node-3 { animation: float-node-3 7s ease-in-out infinite; }
+    .animate-float-node-4 { animation: float-node-1 5.5s ease-in-out infinite; }
+
+    /* Reusable reveals */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px) scale(0.98);
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.revealed {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    /* Perspective layouts */
+    .perspective-1000 {
+      perspective: 1000px;
+    }
+    .perspective-card {
+      transform-style: preserve-3d;
+      transition: transform 0.15s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    /* Radar sweeping pulses */
+    @keyframes radar-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+    .radar-polygon {
+      transform-origin: 270px 250px;
+      animation: radar-pulse 4s ease-in-out infinite;
+    }
+    @keyframes radar-sweep {
+      0% { r: 10px; opacity: 0.6; }
+      100% { r: 180px; opacity: 0; }
+    }
+    .radar-sweep-ring {
+      animation: radar-sweep 5s linear infinite;
+    }
+
+    /* Particle layer styling */
+    .particle-dot {
+      position: absolute;
+      width: 2px; height: 2px;
+      background-color: #b6ff42;
+      border-radius: 50%;
+      opacity: 0.25;
+      pointer-events: none;
+    }
+
+    /* Animated Border effect */
+    @keyframes travel-border {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .animated-border-box::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      background: linear-gradient(90deg, transparent, rgba(182, 255, 66, 0.3), transparent);
+      background-size: 200% 200%;
+      border-radius: inherit;
+      z-index: -1;
+      animation: travel-border 4s linear infinite;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .animated-border-box:focus-within::before {
+      opacity: 1;
+    }
+
+    /* Pipeline particle bead */
+    @keyframes bead-run {
+      0% { top: 0%; opacity: 1; }
+      100% { top: 100%; opacity: 0; }
+    }
+    .pipeline-bead {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: #b6ff42;
+      box-shadow: 0 0 10px #b6ff42;
+      animation: bead-run 2s linear infinite;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .animate-float-node-1, .animate-float-node-2, .animate-float-node-3, .radar-polygon, .radar-sweep-ring, .scanline-overlay, .pipeline-bead {
+        animation: none !important;
+        transform: none !important;
+      }
+      .reveal {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+      }
+      .perspective-card:hover {
+        transform: none !important;
+      }
+      .scroll-smooth {
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-full flex flex-col grid-bg">
+
+  <!-- Scanline & Background Glow -->
+  <div class="scanline-overlay"></div>
+  <div class="fixed inset-0 bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.03),transparent_40%)] pointer-events-none z-0"></div>
+
+  <!-- Navbar -->
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-border transition-all duration-300" style="background: rgba(7, 8, 9, 0.85); backdrop-filter: blur(12px);">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <button id="logo-btn" class="relative w-8 h-8 focus:outline-none focus:ring-2 focus:ring-lime rounded-sm transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_0_15px_rgba(182,255,66,0.25)]">
+          <img src="/static/logo.png" alt="Repo Rizz Logo" class="object-contain w-full h-full">
+        </button>
+        <a href="/" class="flex items-center">
+          <span class="text-lg font-semibold tracking-tight hover:opacity-85 transition-all">
+            REPO <span class="text-lime">RIZZ</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="hidden md:flex items-center gap-1">
+        <a href="/" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-lime bg-surface-elevated">Home</a>
+        <a href="/analyze" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-gray-400 hover:text-white hover:-translate-y-0.5">Repo's Rizz</a>
+        <a href="/compare" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-gray-400 hover:text-white hover:-translate-y-0.5">Repo Battle</a>
+        <a href="/history" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-gray-400 hover:text-white hover:-translate-y-0.5">History</a>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="https://github.com/krishna19072007/repo-rizz" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white text-sm transition-colors flex items-center gap-1">
+          <i data-lucide="github" class="w-4 h-4"></i> GitHub
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Interactive 3D Hero -->
+  <header id="hero-section" class="relative min-h-screen flex items-center justify-center pt-24 px-6 md:px-12 max-w-7xl mx-auto w-full transition-transform duration-200">
+    <!-- Parallax Depth Layer 2: Floating data particles -->
+    <div id="hero-particles" class="absolute inset-0 overflow-hidden pointer-events-none z-0"></div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center w-full z-10">
+      
+      <!-- Left Column: Content + Command Input -->
+      <div class="lg:col-span-6 space-y-8 text-left">
+        <div id="hero-eyebrow" class="opacity-0 translate-y-4 transition-all duration-500 inline-flex items-center gap-2 px-3 py-1 rounded-full border border-lime/20 bg-lime/5 text-lime text-xs font-mono tracking-wider uppercase">
+          <span class="w-1.5 h-1.5 rounded-full bg-lime animate-pulse"></span>
+          Evaluation System v3.1
+        </div>
+        
+        <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight leading-none text-white">
+          <div id="hero-title-1" class="opacity-0 translate-y-6 transition-all duration-700 blur-[2px]">YOUR REPO HAS A</div>
+          <div id="hero-title-2" class="opacity-0 translate-y-6 transition-all duration-700 blur-[2px] text-lime mt-1">REPUTATION.</div>
+        </h1>
+        
+        <p id="hero-subtitle" class="opacity-0 translate-y-4 transition-all duration-700 text-gray-400 text-lg max-w-xl leading-relaxed">
+          Turn a GitHub repository into an evidence-based engineering report.
+        </p>
+
+        <!-- Command Console Input Box -->
+        <div id="hero-input-wrap" class="opacity-0 translate-y-4 transition-all duration-700 w-full max-w-xl space-y-4">
+          <form id="analyze-form" class="relative">
+            <div class="animated-border-box relative flex items-center rounded-xl border border-border hover:border-lime/30 bg-surface px-5 py-4 transition-all duration-300 focus-within:border-lime/50 focus-within:scale-[1.01] focus-within:shadow-[0_0_25px_rgba(182,255,66,0.08)]">
+              <input 
+                type="text" 
+                id="repo-input"
+                placeholder="ENTER GITHUB REPO LINK HERE..." 
+                class="flex-1 bg-transparent outline-none font-mono text-base text-white placeholder:text-gray-600 focus:placeholder:opacity-0 placeholder:transition-opacity"
+                required
+              >
+              <button type="submit" class="p-2 rounded-lg bg-lime hover:scale-105 active:scale-95 transition-transform flex items-center justify-center text-bg font-bold">
+                <span class="hidden md:inline text-[10px] font-mono tracking-wider font-bold text-black mr-1">ANALYZE</span>
+                <i data-lucide="arrow-right" class="w-4 h-4 text-black"></i>
+              </button>
+            </div>
+            <p id="input-error" class="hidden text-coral text-xs font-mono text-left mt-2 pl-2"></p>
+          </form>
+
+          <!-- Quick Demo Trigger -->
+          <div class="flex items-center justify-start gap-4 pt-2 pl-2">
+            <button id="demo-btn" class="flex items-center gap-2 text-xs font-mono font-medium text-gray-500 hover:text-lime transition-colors">
+              <i data-lucide="zap" class="w-3.5 h-3.5"></i> TRY REPO RIZZ &rarr;
+            </button>
+          </div>
+
+          <!-- Mobile-only metrics grid (shown on tablet/mobile, hidden on desktop) -->
+          <div class="grid grid-cols-2 gap-4 lg:hidden pt-8 select-none">
+            <div class="p-4 rounded-xl border border-border bg-surface flex flex-col justify-between h-[100px]">
+              <span class="text-[9px] font-mono text-gray-500 uppercase tracking-widest mb-1">DOCUMENTATION</span>
+              <span class="text-xl font-mono font-bold text-lime">88</span>
+            </div>
+            <div class="p-4 rounded-xl border border-border bg-surface flex flex-col justify-between h-[100px]">
+              <span class="text-[9px] font-mono text-gray-500 uppercase tracking-widest mb-1">CODE QUALITY</span>
+              <span class="text-xl font-mono font-bold text-violet">82</span>
+            </div>
+            <div class="p-4 rounded-xl border border-border bg-surface flex flex-col justify-between h-[100px]">
+              <span class="text-[9px] font-mono text-gray-500 uppercase tracking-widest mb-1">SECURITY</span>
+              <span class="text-xl font-mono font-bold text-coral">74</span>
+            </div>
+            <div class="p-4 rounded-xl border border-border bg-surface flex flex-col justify-between h-[100px]">
+              <span class="text-[9px] font-mono text-gray-500 uppercase tracking-widest mb-1">ARCHITECTURE</span>
+              <span class="text-xl font-mono font-bold text-white">91</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Interactive 3D Repository Graph Scene -->
+      <div id="graph-container" class="lg:col-span-6 relative h-[500px] w-full flex items-center justify-center perspective-1000 hidden lg:flex">
+        
+        <!-- Live connecting neon lines SVG -->
+        <svg id="graph-lines-svg" class="absolute inset-0 w-full h-full pointer-events-none z-0">
+          <line id="line-doc" stroke="#b6ff42" stroke-width="1.2" opacity="0.35" stroke-dasharray="4 4" />
+          <line id="line-code" stroke="#8b5cf6" stroke-width="1.2" opacity="0.35" stroke-dasharray="4 4" />
+          <line id="line-sec" stroke="#ff5c5c" stroke-width="1.2" opacity="0.35" stroke-dasharray="4 4" />
+          <line id="line-arch" stroke="#b6ff42" stroke-width="1.2" opacity="0.35" stroke-dasharray="4 4" />
+        </svg>
+
+        <!-- Center Node -->
+        <div id="node-center" class="absolute w-20 h-20 rounded-full border border-lime bg-surface flex items-center justify-center shadow-[0_0_30px_rgba(182,255,66,0.15)] z-20 pointer-events-none transition-transform duration-300">
+          <img src="/static/logo.png" alt="Rizz" class="w-10 h-10 object-contain">
+        </div>
+
+        <!-- Documentation Node Wrapper -->
+        <div id="node-doc" class="absolute top-4 left-4 animate-float-node-1 pointer-events-auto transition-transform duration-300 z-10" style="--tz: 30px;">
+          <!-- Card visual content -->
+          <div class="w-[240px] h-[120px] p-5 rounded-xl border border-border bg-surface flex flex-col justify-between hover:scale-[1.03] hover:-translate-y-1 hover:border-lime/40 hover:shadow-[0_0_20px_rgba(182,255,66,0.06)] hover:bg-surface-elevated transition-all duration-300">
+            <div>
+              <span class="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest block mb-1">DOCUMENTATION</span>
+              <h4 class="text-xs text-gray-400 font-mono">README & INSTALLATION</h4>
+            </div>
+            <div class="flex justify-between items-end">
+              <span class="text-3xl font-mono font-bold text-lime leading-none">88</span>
+              <span class="text-[10px] font-mono text-lime font-bold px-2 py-0.5 rounded bg-lime/10">STRONG</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Code Quality Node Wrapper -->
+        <div id="node-code" class="absolute top-32 right-4 animate-float-node-2 pointer-events-auto transition-transform duration-300 z-10" style="--tz: 10px;">
+          <div class="w-[240px] h-[120px] p-5 rounded-xl border border-border bg-surface flex flex-col justify-between hover:scale-[1.03] hover:-translate-y-1 hover:border-violet/40 hover:shadow-[0_0_20px_rgba(139,92,246,0.06)] hover:bg-surface-elevated transition-all duration-300">
+            <div>
+              <span class="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest block mb-1">CODE QUALITY</span>
+              <h4 class="text-xs text-gray-400 font-mono">STYLE CHECKING & LINTING</h4>
+            </div>
+            <div class="flex justify-between items-end">
+              <span class="text-3xl font-mono font-bold text-violet leading-none">82</span>
+              <span class="text-[10px] font-mono text-violet font-bold px-2 py-0.5 rounded bg-violet/10">STABLE</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security Node Wrapper -->
+        <div id="node-sec" class="absolute bottom-24 left-4 animate-float-node-3 pointer-events-auto transition-transform duration-300 z-10" style="--tz: 20px;">
+          <div class="w-[240px] h-[120px] p-5 rounded-xl border border-border bg-surface flex flex-col justify-between hover:scale-[1.03] hover:-translate-y-1 hover:border-coral/40 hover:shadow-[0_0_20px_rgba(255,92,92,0.06)] hover:bg-surface-elevated transition-all duration-300">
+            <div>
+              <span class="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest block mb-1">SECURITY</span>
+              <h4 class="text-xs text-gray-400 font-mono">SECRETS & INTRUSION LEAKS</h4>
+            </div>
+            <div class="flex justify-between items-end">
+              <span class="text-3xl font-mono font-bold text-coral leading-none">74</span>
+              <span class="text-[10px] font-mono text-coral font-bold px-2 py-0.5 rounded bg-coral/10">SECURE</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Architecture Node Wrapper -->
+        <div id="node-arch" class="absolute bottom-10 right-8 animate-float-node-4 pointer-events-auto transition-transform duration-300 z-10" style="--tz: 40px;">
+          <div class="w-[240px] h-[120px] p-5 rounded-xl border border-border bg-surface flex flex-col justify-between hover:scale-[1.03] hover:-translate-y-1 hover:border-lime/40 hover:shadow-[0_0_20px_rgba(182,255,66,0.06)] hover:bg-surface-elevated transition-all duration-300">
+            <div>
+              <span class="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest block mb-1">ARCHITECTURE</span>
+              <h4 class="text-xs text-gray-400 font-mono">NESTING & STRUCTURAL DECAY</h4>
+            </div>
+            <div class="flex justify-between items-end">
+              <span class="text-3xl font-mono font-bold text-white leading-none">91</span>
+              <span class="text-[10px] font-mono text-lime font-bold px-2 py-0.5 rounded bg-lime/10">MODULAR</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Section 1: What We Do (Interactive Map) -->
+  <section class="py-32 px-6 max-w-7xl mx-auto w-full border-t border-border reveal">
+    <div class="max-w-3xl mb-16">
+      <h2 class="text-xs font-mono tracking-[0.3em] text-lime uppercase mb-4">WHAT WE DO</h2>
+      <p class="text-3xl md:text-4xl font-bold tracking-tight text-white leading-tight">
+        Repo Rizz looks beyond whether your project runs. It examines how the repository is documented, structured, secured, and presented — then tells you where it stands.
+      </p>
+    </div>
+
+    <!-- Central Interactive Visual Engineering Map -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-stretch mt-12">
+      <!-- Left side: The Map -->
+      <div id="interactive-map-area" class="lg:col-span-7 border border-border bg-surface/50 rounded-2xl p-8 relative flex items-center justify-center min-h-[400px]">
+        
+        <svg id="map-connectors" class="absolute inset-0 w-full h-full pointer-events-none">
+          <line id="map-l-doc" stroke="rgba(255,255,255,0.05)" stroke-width="1.5" />
+          <line id="map-l-code" stroke="rgba(255,255,255,0.05)" stroke-width="1.5" />
+          <line id="map-l-arch" stroke="rgba(255,255,255,0.05)" stroke-width="1.5" />
+          <line id="map-l-sec" stroke="rgba(255,255,255,0.05)" stroke-width="1.5" />
+          <line id="map-l-ready" stroke="rgba(255,255,255,0.05)" stroke-width="1.5" />
+        </svg>
+
+        <!-- Center Node -->
+        <div id="map-node-center" class="absolute w-16 h-16 rounded-full border border-border bg-surface flex items-center justify-center z-10 pointer-events-none">
+          <span class="text-[9px] font-mono text-gray-500 tracking-wider">REPO</span>
+        </div>
+
+        <!-- Documentation Node -->
+        <button data-map-node="doc" class="map-node absolute top-8 left-12 px-4 py-2 rounded-lg border border-border bg-surface hover:border-lime transition-all focus:outline-none z-10 flex items-center gap-2">
+          <i data-lucide="book-open" class="w-3.5 h-3.5 text-lime"></i>
+          <span class="text-xs font-mono font-bold text-white uppercase tracking-wider">Documentation</span>
+        </button>
+
+        <!-- Code Quality Node -->
+        <button data-map-node="code" class="map-node absolute top-12 right-12 px-4 py-2 rounded-lg border border-border bg-surface hover:border-violet transition-all focus:outline-none z-10 flex items-center gap-2">
+          <i data-lucide="code-2" class="w-3.5 h-3.5 text-violet"></i>
+          <span class="text-xs font-mono font-bold text-white uppercase tracking-wider">Code Quality</span>
+        </button>
+
+        <!-- Architecture Node -->
+        <button data-map-node="arch" class="map-node absolute bottom-12 left-12 px-4 py-2 rounded-lg border border-border bg-surface hover:border-lime transition-all focus:outline-none z-10 flex items-center gap-2">
+          <i data-lucide="layers" class="w-3.5 h-3.5 text-lime"></i>
+          <span class="text-xs font-mono font-bold text-white uppercase tracking-wider">Architecture</span>
+        </button>
+
+        <!-- Security Node -->
+        <button data-map-node="sec" class="map-node absolute bottom-16 right-16 px-4 py-2 rounded-lg border border-border bg-surface hover:border-coral transition-all focus:outline-none z-10 flex items-center gap-2">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-coral"></i>
+          <span class="text-xs font-mono font-bold text-white uppercase tracking-wider">Security</span>
+        </button>
+
+        <!-- Readiness Node -->
+        <button data-map-node="ready" class="map-node absolute top-[44%] right-4 px-4 py-2 rounded-lg border border-border bg-surface hover:border-lime transition-all focus:outline-none z-10 flex items-center gap-2">
+          <i data-lucide="briefcase" class="w-3.5 h-3.5 text-lime"></i>
+          <span class="text-xs font-mono font-bold text-white uppercase tracking-wider">Readiness</span>
+        </button>
+
+      </div>
+
+      <!-- Right side: Detail Panel -->
+      <div class="lg:col-span-5 flex flex-col justify-center">
+        <div id="map-detail-card" class="p-8 border border-border bg-surface rounded-2xl space-y-4 relative overflow-hidden transition-all duration-300">
+          <div class="flex items-center gap-3">
+            <div id="map-detail-icon-wrap" class="w-10 h-10 rounded-lg bg-lime/10 flex items-center justify-center text-lime">
+              <i id="map-detail-icon" data-lucide="book-open" class="w-5 h-5"></i>
+            </div>
+            <h3 id="map-detail-title" class="text-lg font-bold text-white tracking-wide uppercase">Documentation</h3>
+          </div>
+          <p id="map-detail-desc" class="text-sm text-gray-400 leading-relaxed">
+            Checks readme configuration, documentation setups, build commands, and guide files to ensure onboarding clarity.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: How It Works -->
+  <section class="py-32 px-6 max-w-7xl mx-auto w-full border-t border-border reveal">
+    <div class="text-center max-w-xl mx-auto mb-24">
+      <h2 class="text-xs font-mono tracking-[0.3em] text-lime uppercase mb-4">HOW IT WORKS</h2>
+      <p class="text-3xl font-bold text-white">The Analysis Pipeline</p>
+    </div>
+
+    <!-- Scroll react timeline layout -->
+    <div class="relative max-w-4xl mx-auto perspective-1000">
+      
+      <!-- Central Line -->
+      <div class="absolute left-6 md:left-1/2 top-0 bottom-0 w-[2px] bg-border z-0">
+        <div id="pipeline-line" class="w-full bg-lime transition-all duration-100" style="height: 0%;"></div>
+        <!-- Travelling neon bead -->
+        <div id="pipeline-bead-node" class="pipeline-bead hidden"></div>
+      </div>
+
+      <div class="space-y-16">
+        <!-- Step 1 -->
+        <div class="pipeline-step relative flex flex-col md:flex-row items-start md:items-center justify-between group py-4 opacity-30 transition-all duration-300">
+          <div class="pipeline-circle absolute left-6 md:left-1/2 -translate-x-[9px] w-5 h-5 rounded-full border-4 border-border bg-bg transition-all duration-300 z-10"></div>
+          <div class="md:w-[45%] pl-16 md:pl-0 md:text-right transition-transform duration-300 hover:scale-[1.02] hover:-translate-y-1">
+            <span class="text-xs font-mono text-lime font-bold">STEP 01</span>
+            <h4 class="text-lg font-bold text-white mt-1">PASTE REPOSITORY</h4>
+            <p class="text-xs text-gray-500 mt-1">Input any public GitHub repository link.</p>
+          </div>
+          <div class="hidden md:block md:w-[45%]"></div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="pipeline-step relative flex flex-col md:flex-row items-start md:items-center justify-between group py-4 opacity-30 transition-all duration-300">
+          <div class="pipeline-circle absolute left-6 md:left-1/2 -translate-x-[9px] w-5 h-5 rounded-full border-4 border-border bg-bg transition-all duration-300 z-10"></div>
+          <div class="hidden md:block md:w-[45%]"></div>
+          <div class="md:w-[45%] pl-16 md:pl-0 transition-transform duration-300 hover:scale-[1.02] hover:-translate-y-1">
+            <span class="text-xs font-mono text-lime font-bold">STEP 02</span>
+            <h4 class="text-lg font-bold text-white mt-1">FETCH REAL GITHUB DATA</h4>
+            <p class="text-xs text-gray-500 mt-1">Real-time repository metadata downloads via GitHub API.</p>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="pipeline-step relative flex flex-col md:flex-row items-start md:items-center justify-between group py-4 opacity-30 transition-all duration-300">
+          <div class="pipeline-circle absolute left-6 md:left-1/2 -translate-x-[9px] w-5 h-5 rounded-full border-4 border-border bg-bg transition-all duration-300 z-10"></div>
+          <div class="md:w-[45%] pl-16 md:pl-0 md:text-right transition-transform duration-300 hover:scale-[1.02] hover:-translate-y-1">
+            <span class="text-xs font-mono text-lime font-bold">STEP 03</span>
+            <h4 class="text-lg font-bold text-white mt-1">ANALYZE EVIDENCE</h4>
+            <p class="text-xs text-gray-500 mt-1">Scans file hierarchies, dependencies, setup instructions.</p>
+          </div>
+          <div class="hidden md:block md:w-[45%]"></div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="pipeline-step relative flex flex-col md:flex-row items-start md:items-center justify-between group py-4 opacity-30 transition-all duration-300">
+          <div class="pipeline-circle absolute left-6 md:left-1/2 -translate-x-[9px] w-5 h-5 rounded-full border-4 border-border bg-bg transition-all duration-300 z-10"></div>
+          <div class="hidden md:block md:w-[45%]"></div>
+          <div class="md:w-[45%] pl-16 md:pl-0 transition-transform duration-300 hover:scale-[1.02] hover:-translate-y-1">
+            <span class="text-xs font-mono text-lime font-bold">STEP 04</span>
+            <h4 class="text-lg font-bold text-white mt-1">CALCULATE SCORES</h4>
+            <p class="text-xs text-gray-500 mt-1">Runs our deterministic evaluation scoring engine.</p>
+          </div>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="pipeline-step relative flex flex-col md:flex-row items-start md:items-center justify-between group py-4 opacity-30 transition-all duration-300">
+          <div class="pipeline-circle absolute left-6 md:left-1/2 -translate-x-[9px] w-5 h-5 rounded-full border-4 border-border bg-bg transition-all duration-300 z-10"></div>
+          <div class="md:w-[45%] pl-16 md:pl-0 md:text-right transition-transform duration-300 hover:scale-[1.02] hover:-translate-y-1">
+            <span class="text-xs font-mono text-lime font-bold">STEP 05</span>
+            <h4 class="text-lg font-bold text-white mt-1">GENERATE INSIGHTS</h4>
+            <p class="text-xs text-gray-500 mt-1">AI critical review highlights context-aware improvement tips.</p>
+          </div>
+          <div class="hidden md:block md:w-[45%]"></div>
+        </div>
+
+        <!-- Step 6 -->
+        <div class="pipeline-step relative flex flex-col md:flex-row items-start md:items-center justify-between group py-4 opacity-30 transition-all duration-300">
+          <div class="pipeline-circle absolute left-6 md:left-1/2 -translate-x-[9px] w-5 h-5 rounded-full border-4 border-border bg-bg transition-all duration-300 z-10"></div>
+          <div class="hidden md:block md:w-[45%]"></div>
+          <div class="md:w-[45%] pl-16 md:pl-0 transition-transform duration-300 hover:scale-[1.02] hover:-translate-y-1">
+            <span class="text-xs font-mono text-lime font-bold">STEP 06</span>
+            <h4 class="text-lg font-bold text-white mt-1">GET YOUR REPO RIZZ</h4>
+            <p class="text-xs text-gray-500 mt-1">Receive your formatted resume readiness portfolio link.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: Live Analysis Terminal ("How Repo Rizz Thinks") -->
+  <section class="py-32 px-6 max-w-7xl mx-auto w-full border-t border-border reveal">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      
+      <!-- Text explain -->
+      <div class="lg:col-span-5 space-y-6 text-left">
+        <h2 class="text-xs font-mono tracking-[0.3em] text-lime uppercase">HOW REPO RIZZ THINKS</h2>
+        <p class="text-3xl font-bold text-white leading-tight">Live Analysis Demonstration</p>
+        <p class="text-sm text-gray-400 leading-relaxed">
+          The engine inspects structural layout configuration markers. Here is a preview of the metadata evaluation scan.
+        </p>
+        <div class="inline-flex items-center gap-2 text-xs font-mono text-lime bg-lime/5 border border-lime/10 px-3 py-1 rounded">
+          <span class="w-1.5 h-1.5 rounded-full bg-lime animate-pulse"></span> EXPLAINER ONLY
+        </div>
+      </div>
+
+      <!-- Animated terminal + code tree -->
+      <div class="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-4 p-6 border border-border rounded-2xl bg-surface">
+        
+        <!-- Left: Code structure tree -->
+        <div class="p-4 rounded-xl bg-bg border border-border font-mono text-xs text-gray-400 space-y-2 select-none">
+          <p class="text-white">repo-rizz/</p>
+          <p class="pl-4">├── <span class="text-lime">src/</span></p>
+          <p class="pl-8">├── components/</p>
+          <p class="pl-8">└── lib/</p>
+          <p class="pl-4">├── <span class="text-violet">python-backend/</span></p>
+          <p class="pl-8">├── main.py</p>
+          <p class="pl-8">└── scoring.py</p>
+          <p class="pl-4 font-bold text-white">├── README.md</p>
+          <p class="pl-4 text-coral">├── package.json</p>
+          <p class="pl-4">└── .env.example</p>
+        </div>
+
+        <!-- Right: streaming log signals -->
+        <div class="p-4 rounded-xl bg-bg border border-border font-mono text-[11px] text-gray-400 h-40 overflow-hidden flex flex-col justify-end space-y-1 select-none">
+          <div id="thinking-log" class="space-y-1"></div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Section 4: Engineering Fingerprint -->
+  <section class="py-32 px-6 max-w-7xl mx-auto w-full border-t border-border reveal">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      
+      <div class="lg:col-span-5 space-y-6 text-left">
+        <h2 class="text-xs font-mono tracking-[0.3em] text-lime uppercase">ENGINEERING HEALTH</h2>
+        <p class="text-3xl font-bold text-white leading-tight">Visual Fingerprint</p>
+        <p class="text-sm text-gray-400 leading-relaxed">
+          Repo Rizz maps your code across four engineering dimensions, compiling them into a final visual dashboard.
+        </p>
+        <p class="text-[10px] font-mono text-gray-500 uppercase tracking-widest leading-relaxed">
+          * This visual is a demonstrative sample. Real analysis renders custom results dynamically.
+        </p>
+      </div>
+
+      <div class="lg:col-span-7 flex justify-center p-6 border border-border rounded-2xl bg-surface relative overflow-hidden">
+        <!-- Interactive Demo Radar -->
+        <svg width="440" height="400" viewBox="0 0 540 500" class="w-full">
+          <!-- Sweep scanning sonar -->
+          <circle cx="270" cy="250" r="10" fill="none" stroke="#b6ff42" stroke-width="1.5" class="radar-sweep-ring pointer-events-none" />
+
+          <!-- Grid Rings -->
+          <circle cx="270" cy="250" r="31.25" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1" />
+          <circle cx="270" cy="250" r="62.5" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1" />
+          <circle cx="270" cy="250" r="93.75" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1" />
+          <circle cx="270" cy="250" r="125" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1" />
+
+          <!-- Axis Lines -->
+          <line x1="270" y1="250" x2="270" y2="125" stroke="rgba(255,255,255,0.05)" stroke-width="1" />
+          <line x1="270" y1="250" x2="395" y2="250" stroke="rgba(255,255,255,0.05)" stroke-width="1" />
+          <line x1="270" y1="250" x2="270" y2="375" stroke="rgba(255,255,255,0.05)" stroke-width="1" />
+          <line x1="270" y1="250" x2="145" y2="250" stroke="rgba(255,255,255,0.05)" stroke-width="1" />
+
+          <!-- Polygon score path -->
+          <polygon points="270,140 370,250 270,330 160,250" fill="rgba(182, 255, 66, 0.08)" stroke="#b6ff42" stroke-width="2" class="radar-polygon" />
+          
+          <!-- Dots -->
+          <circle cx="270" cy="140" r="5" fill="#b6ff42" />
+          <circle cx="370" cy="250" r="5" fill="#b6ff42" />
+          <circle cx="270" cy="330" r="5" fill="#b6ff42" />
+          <circle cx="160" cy="250" r="5" fill="#b6ff42" />
+
+          <!-- Labels -->
+          <text x="270" y="105" text-anchor="middle" fill="#9ca3af" font-size="12" font-family="monospace">DOCUMENTATION (88)</text>
+          <text x="410" y="254" text-anchor="start" fill="#9ca3af" font-size="12" font-family="monospace">CODE QUALITY (82)</text>
+          <text x="270" y="395" text-anchor="middle" fill="#9ca3af" font-size="12" font-family="monospace">ARCHITECTURE (91)</text>
+          <text x="130" y="254" text-anchor="end" fill="#9ca3af" font-size="12" font-family="monospace">SECURITY (74)</text>
+
+          <text x="270" y="246" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="bold" font-family="monospace">4</text>
+          <text x="270" y="260" text-anchor="middle" fill="#9ca3af" font-size="7" font-family="monospace">DIMENSIONS</text>
+        </svg>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Section 5: Why Repo Rizz? -->
+  <section class="py-32 px-6 max-w-7xl mx-auto w-full border-t border-border reveal">
+    <div class="text-center max-w-xl mx-auto mb-20">
+      <h2 class="text-xs font-mono tracking-[0.3em] text-lime uppercase mb-4">WHY REPO RIZZ?</h2>
+      <p class="text-3xl font-bold text-white">Built Differently</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      
+      <div class="reveal-left perspective-card p-8 rounded-2xl border border-border bg-surface relative overflow-hidden group hover:border-lime/20 transition-colors">
+        <div class="absolute -right-10 -bottom-10 w-40 h-40 rounded-full bg-lime/5 group-hover:bg-lime/10 transition-colors blur-2xl pointer-events-none"></div>
+        <h4 class="text-lg font-bold text-white font-mono uppercase tracking-wider mb-2">Real Evidence</h4>
+        <p class="text-sm text-gray-400 leading-relaxed">Scores are grounded in repository signals rather than arbitrary numbers.</p>
+      </div>
+
+      <div class="reveal-right perspective-card p-8 rounded-2xl border border-border bg-surface relative overflow-hidden group hover:border-lime/20 transition-colors">
+        <div class="absolute -right-10 -bottom-10 w-40 h-40 rounded-full bg-violet/5 group-hover:bg-violet/10 transition-colors blur-2xl pointer-events-none"></div>
+        <h4 class="text-lg font-bold text-white font-mono uppercase tracking-wider mb-2">Context-Aware</h4>
+        <p class="text-sm text-gray-400 leading-relaxed">A curated list, library, and application should not be judged the same way.</p>
+      </div>
+
+      <div class="reveal-left perspective-card p-8 rounded-2xl border border-border bg-surface relative overflow-hidden group hover:border-lime/20 transition-colors">
+        <div class="absolute -right-10 -bottom-10 w-40 h-40 rounded-full bg-lime/5 group-hover:bg-lime/10 transition-colors blur-2xl pointer-events-none"></div>
+        <h4 class="text-lg font-bold text-white font-mono uppercase tracking-wider mb-2">Actionable</h4>
+        <p class="text-sm text-gray-400 leading-relaxed">Don't just see a score. Find out what should actually change.</p>
+      </div>
+
+      <div class="reveal-right perspective-card p-8 rounded-2xl border border-border bg-surface relative overflow-hidden group hover:border-lime/20 transition-colors">
+        <div class="absolute -right-10 -bottom-10 w-40 h-40 rounded-full bg-violet/5 group-hover:bg-violet/10 transition-colors blur-2xl pointer-events-none"></div>
+        <h4 class="text-lg font-bold text-white font-mono uppercase tracking-wider mb-2">Resume-Focused</h4>
+        <p class="text-sm text-gray-400 leading-relaxed">Understand whether the project is ready to represent you.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Section 6: Repo Battle -->
+  <section class="py-32 px-6 max-w-7xl mx-auto w-full border-t border-border reveal">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      
+      <!-- Side-by-side battle panels -->
+      <div class="lg:col-span-7 grid grid-cols-2 gap-4 relative overflow-visible flex items-center">
+        <div class="absolute inset-0 bg-violet/5 blur-3xl pointer-events-none"></div>
+
+        <!-- Central VS circle -->
+        <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-violet border border-border flex items-center justify-center text-white text-xs font-mono font-bold z-20 reveal scale-[0.5]" style="transition-delay: 200ms;">
+          VS
+        </div>
+
+        <!-- Left card -->
+        <div class="battle-left border border-border hover:border-lime/30 bg-surface rounded-xl p-6 hover:-translate-y-2 hover:shadow-[0_0_30px_rgba(182,255,66,0.1)] transition-all duration-300">
+          <span class="text-[9px] font-mono text-lime font-bold">REPO A</span>
+          <h4 class="font-bold text-white text-base mt-2">next.js</h4>
+          <div class="h-1.5 w-full bg-surface-elevated rounded-full overflow-hidden mt-6">
+            <div class="h-full bg-lime transition-all duration-1000" style="width: 89%;"></div>
+          </div>
+          <span class="text-xs font-mono text-gray-500 mt-2 block">Readiness: 89%</span>
+        </div>
+
+        <!-- Right card -->
+        <div class="battle-right border border-border hover:border-violet/30 bg-surface rounded-xl p-6 hover:-translate-y-2 hover:shadow-[0_0_30px_rgba(139,92,246,0.1)] transition-all duration-300">
+          <span class="text-[9px] font-mono text-violet font-bold">REPO B</span>
+          <h4 class="font-bold text-white text-base mt-2">remix</h4>
+          <div class="h-1.5 w-full bg-surface-elevated rounded-full overflow-hidden mt-6">
+            <div class="h-full bg-violet transition-all duration-1000" style="width: 76%;"></div>
+          </div>
+          <span class="text-xs font-mono text-gray-500 mt-2 block">Readiness: 76%</span>
+        </div>
+      </div>
+
+      <div class="lg:col-span-5 space-y-6 text-left">
+        <h2 class="text-xs font-mono tracking-[0.3em] text-violet uppercase">REPO BATTLE</h2>
+        <p class="text-3xl font-bold text-white leading-tight">
+          Two repositories enter.<br>
+          One gets the better engineering report.
+        </p>
+        <p class="text-sm text-gray-400 leading-relaxed">
+          Repo Battle compares repositories across Documentation, Code Quality, Architecture, Security, and Resume Readiness to calculate a conclusive winner.
+        </p>
+        <a href="/compare" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-lime text-black font-semibold text-sm transition-transform hover:scale-105 active:scale-[0.98]">
+          ENTER REPO BATTLE <i data-lucide="arrow-right" class="w-4 h-4 text-black"></i>
+        </a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Section 7: Resume Readiness Signature Visual -->
+  <section class="py-32 px-6 max-w-7xl mx-auto w-full border-t border-border reveal">
+    <div class="text-center max-w-2xl mx-auto space-y-6">
+      <h2 class="text-xs font-mono tracking-[0.3em] text-lime uppercase">IS YOUR REPO ACTUALLY RESUME READY?</h2>
+      <p class="text-3xl md:text-4xl font-bold text-white leading-tight">
+        A project can work perfectly and still look unfinished on GitHub. Repo Rizz helps you find the gaps before a recruiter or faculty member does.
+      </p>
+
+      <!-- Signature Score Ring Visualizer -->
+      <div class="flex flex-col items-center justify-center py-8 relative">
+        <div class="relative w-44 h-44 flex items-center justify-center">
+          <svg width="180" height="180" viewBox="0 0 180 180" class="mx-auto">
+            <circle cx="90" cy="90" r="80" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="6" />
+            <circle id="demo-readiness-circle" cx="90" cy="90" r="80" fill="none" stroke="#b6ff42" stroke-width="6" stroke-linecap="round"
+              stroke-dasharray="502.6" stroke-dashoffset="502.6" transform="rotate(-90 90 90)"
+              style="transition: stroke-dashoffset 2s cubic-bezier(0.16, 1, 0.3, 1);" />
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <span id="demo-readiness-score" class="text-5xl font-bold font-mono text-lime">0</span>
+            <span class="text-[9px] font-mono text-gray-500 uppercase mt-1">EXAMPLE REPORT</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Visual Equation Layout -->
+      <div class="grid grid-cols-1 md:grid-cols-9 gap-4 items-center justify-center pt-12 text-sm font-mono text-gray-400">
+        
+        <div class="md:col-span-2 p-4 rounded-xl border border-border bg-surface text-center">
+          <span class="text-white block font-bold">ENGINEERING QUALITY</span>
+        </div>
+
+        <div class="text-xl font-bold text-lime">+</div>
+
+        <div class="md:col-span-2 p-4 rounded-xl border border-border bg-surface text-center">
+          <span class="text-white block font-bold">PRESENTATION</span>
+        </div>
+
+        <div class="text-xl font-bold text-lime">+</div>
+
+        <div class="md:col-span-2 p-4 rounded-xl border border-border bg-surface text-center">
+          <span class="text-white block font-bold">SECURITY & DOCS</span>
+        </div>
+
+        <div class="text-xl font-bold text-lime">=</div>
+
+        <div class="md:col-span-9 p-5 rounded-xl border border-lime bg-lime/5 text-center mt-4">
+          <span class="text-lime font-bold text-lg block">RESUME READINESS</span>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 8: Project Specific Rizz Verdict Examples -->
+  <section class="py-32 px-6 max-w-7xl mx-auto w-full border-t border-border reveal">
+    <div class="text-center max-w-xl mx-auto mb-20">
+      <h2 class="text-xs font-mono tracking-[0.3em] text-lime uppercase mb-4">GET THE REAL VERDICT</h2>
+      <p class="text-3xl font-bold text-white">Not all repos are judged equally</p>
+      <p class="text-sm text-gray-400 mt-2">A polished weather app and a custom framework serve different engineering purposes.</p>
+      
+      <!-- Rizz Verdict Animation Container -->
+      <div id="verdict-quote-container" class="mt-8 p-6 rounded-xl border border-border bg-surface max-w-lg mx-auto relative overflow-hidden opacity-0 transform translate-y-4 transition-all duration-700">
+        <span class="text-[9px] font-mono tracking-[0.2em] text-lime uppercase block mb-2 transition-all">RIZZ VERDICT</span>
+        <p class="text-base italic text-white leading-relaxed">
+          “More than a portfolio demo — this solves a useful developer problem.”
+        </p>
+      </div>
+    </div>
+
+    <!-- Displaying 3 types of evaluations -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      
+      <div class="reveal p-6 rounded-2xl border border-border bg-surface space-y-4" style="transition-delay: 0ms">
+        <span class="text-[9px] font-mono text-gray-500 uppercase tracking-widest">COMMON PROJECT</span>
+        <h4 class="text-white font-bold text-base">"Works, but the idea is familiar. Add a meaningful differentiator."</h4>
+        <p class="text-xs text-gray-400 leading-relaxed">Typical for simple weather apps, todo lists, or standard course tutorials.</p>
+      </div>
+
+      <div class="reveal p-6 rounded-2xl border border-border bg-surface space-y-4" style="transition-delay: 100ms">
+        <span class="text-[9px] font-mono text-lime uppercase tracking-widest">USEFUL DEV TOOL</span>
+        <h4 class="text-white font-bold text-base">"Solves a real developer problem with clear practical value."</h4>
+        <p class="text-xs text-gray-400 leading-relaxed">Typical for infrastructure configs, CLI scripts, automation hooks.</p>
+      </div>
+
+      <div class="reveal p-6 rounded-2xl border border-border bg-surface space-y-4" style="transition-delay: 200ms">
+        <span class="text-[9px] font-mono text-violet uppercase tracking-widest">OPEN-SOURCE RESOURCE</span>
+        <h4 class="text-white font-bold text-base">"Provides reusable value that other developers can build on."</h4>
+        <p class="text-xs text-gray-400 leading-relaxed">Typical for shared libraries, template starters, curated packages.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Section 9: Final Call To Action -->
+  <section class="py-32 px-6 max-w-4xl mx-auto w-full border-t border-border text-center reveal">
+    <div class="space-y-8">
+      <h2 class="text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-none">
+        READY TO CHECK YOUR<br>
+        <span class="text-lime">REPO'S RIZZ?</span>
+      </h2>
+      <p class="text-gray-400 text-base max-w-md mx-auto leading-relaxed" style="transition-delay: 100ms">
+        Paste a GitHub repository and find out.
+      </p>
+
+      <!-- Final CTA form -->
+      <div class="w-full max-w-xl mx-auto space-y-4 pt-4 transition-all duration-700 transform translate-y-4" style="transition-delay: 200ms">
+        <form id="analyze-form-final" class="relative group">
+          <div class="relative flex items-center rounded-2xl border border-border hover:border-lime/30 bg-surface px-6 py-4 transition-all focus-within:border-lime/50 focus-within:shadow-[0_0_25px_rgba(182,255,66,0.12)] focus-within:scale-[1.01]">
+            <input 
+              type="text" 
+              id="repo-input-final"
+              placeholder="ENTER GITHUB REPO LINK HERE..." 
+              class="flex-1 bg-transparent outline-none font-mono text-lg text-white placeholder:text-gray-600 focus:placeholder:opacity-0 placeholder:transition-opacity"
+              required
+            >
+            <button type="submit" class="p-2 rounded-xl bg-lime hover:scale-105 active:scale-95 transition-transform flex items-center justify-center text-bg font-bold">
+              <i data-lucide="arrow-right" class="w-5 h-5 text-black transition-transform duration-200 group-hover:translate-x-1"></i>
+            </button>
+          </div>
+          <p id="input-error-final" class="hidden text-coral text-xs font-mono text-left mt-2 pl-2"></p>
+        </form>
+
+        <div class="flex items-center justify-center gap-4 pt-2 transition-all duration-700" style="transition-delay: 300ms">
+          <button id="demo-btn-final" class="flex items-center gap-2 text-xs font-mono font-medium text-gray-500 hover:text-lime transition-colors">
+            <i data-lucide="zap" class="w-3.5 h-3.5"></i> TRY REPO RIZZ &rarr;
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-border mt-auto py-8 bg-bg">
+    <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex flex-col items-center md:items-start text-center md:text-left">
+        <span class="text-lg font-bold tracking-tight text-white">
+          REPO <span class="text-lime">RIZZ</span>
+        </span>
+        <p class="text-xs mt-1 text-gray-500">
+          Advanced GitHub repository analysis for developers.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-6">
+        <a href="/about" class="text-sm text-gray-400 hover:text-lime transition-colors">About</a>
+        <button id="privacy-btn" class="text-sm text-gray-400 cursor-not-allowed transition-opacity hover:opacity-70">
+          Privacy Policy
+        </button>
+        <a href="https://github.com/krishna19072007/repo-rizz" target="_blank" rel="noopener noreferrer" class="text-sm text-gray-400 hover:text-lime transition-colors">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Brand Modal -->
+  <div id="brand-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm modal-close"></div>
+    <div class="relative w-full max-w-md rounded-2xl overflow-hidden border border-border bg-surface shadow-2xl p-10 flex flex-col items-center text-center z-10">
+      <button class="absolute top-4 right-4 p-2 rounded-full text-gray-400 hover:text-white hover:bg-surface-elevated transition-colors modal-close">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="relative w-32 h-32 mb-6">
+        <img src="/static/logo.png" alt="Repo Rizz Logo" class="object-contain w-full h-full">
+      </div>
+      
+      <h2 class="text-3xl font-bold tracking-tight mb-2 text-white">
+        REPO <span class="text-lime">RIZZ</span>
+      </h2>
+      
+      <p class="text-sm text-gray-400 mb-6">
+        AI-powered GitHub repository analysis and scoring engine.
+      </p>
+      
+      <div class="w-full border-t border-border pt-6 flex justify-center space-x-6">
+        <a href="https://github.com/krishna19072007/repo-rizz" target="_blank" rel="noopener noreferrer" class="text-xs font-mono tracking-wider text-gray-400 hover:text-lime transition-colors">
+          SOURCE CODE
+        </a>
+        <a href="/about" class="text-xs font-mono tracking-wider text-gray-400 hover:text-lime transition-colors">
+          ABOUT
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // --- Helper: parseGitHubUrl ---
+      function parseGitHubUrlHelper(input) {
+        const trimmed = input.trim();
+        const urlRegex = /^(?:https?:\/\/)?(?:www\.)?github\.com\/([a-zA-Z0-9._-]+)\/([a-zA-Z0-9._-]+)(?:\/.*)?$/;
+        const shortRegex = /^([a-zA-Z0-9._-]+)\/([a-zA-Z0-9._-]+)$/;
+        const match = trimmed.match(urlRegex) || trimmed.match(shortRegex);
+        if (match) {
+          return { owner: match[1], name: match[2].replace(/\.git$/, "") };
+        }
+        return null;
+      }
+
+      // --- 1. Hero Entrance Sequence Staggered ---
+      function runHeroEntrance() {
+        const delays = {
+          "hero-eyebrow": 100,
+          "hero-title-1": 250,
+          "hero-title-2": 450,
+          "hero-subtitle": 650,
+          "hero-input-wrap": 850
+        };
+        Object.entries(delays).forEach(([id, delay]) => {
+          const el = document.getElementById(id);
+          if (el) {
+            setTimeout(() => {
+              el.classList.remove("opacity-0", "translate-y-4", "translate-y-6", "blur-[2px]");
+              el.classList.add("opacity-100", "translate-y-0");
+            }, delay);
+          }
+        });
+      }
+      runHeroEntrance();
+
+      // --- 2. Low-density Background Particles (Hero) ---
+      function setupAtmosphere() {
+        const wrap = document.getElementById("hero-particles");
+        if (!wrap) return;
+        const count = 12; // Muted count
+        for (let i = 0; i < count; i++) {
+          const dot = document.createElement("div");
+          dot.className = "particle-dot";
+          dot.style.left = `${Math.random() * 100}%`;
+          dot.style.top = `${Math.random() * 100}%`;
+          dot.style.opacity = `${0.05 + Math.random() * 0.15}`;
+          // Slow translation drifts
+          dot.style.transform = `translate(${Math.random() * 40 - 20}px, ${Math.random() * 40 - 20}px)`;
+          dot.style.transition = "transform 15s linear";
+          wrap.appendChild(dot);
+        }
+      }
+      setupAtmosphere();
+
+      // --- 3. Interactive Hero Graph ---
+      const centerNode = document.getElementById("node-center");
+      const outerNodes = [
+        document.getElementById("node-doc"),
+        document.getElementById("node-code"),
+        document.getElementById("node-sec"),
+        document.getElementById("node-arch")
+      ];
+      const lines = [
+        document.getElementById("line-doc"),
+        document.getElementById("line-code"),
+        document.getElementById("line-sec"),
+        document.getElementById("line-arch")
+      ];
+      const graphContainer = document.getElementById("graph-container");
+
+      function updateGraphLines() {
+        if (!graphContainer || !centerNode) return;
+        const containerRect = graphContainer.getBoundingClientRect();
+        const centerRect = centerNode.getBoundingClientRect();
+        const cx = (centerRect.left + centerRect.width / 2) - containerRect.left;
+        const cy = (centerRect.top + centerRect.height / 2) - containerRect.top;
+
+        outerNodes.forEach((node, idx) => {
+          if (!node) return;
+          const nodeRect = node.getBoundingClientRect();
+          const nx = (nodeRect.left + nodeRect.width / 2) - containerRect.left;
+          const ny = (nodeRect.top + nodeRect.height / 2) - containerRect.top;
+          
+          const line = lines[idx];
+          if (line) {
+            line.setAttribute("x1", cx);
+            line.setAttribute("y1", cy);
+            line.setAttribute("x2", nx);
+            line.setAttribute("y2", ny);
+          }
+        });
+      }
+
+      function setupHeroGraph() {
+        if (!graphContainer) return;
+        
+        window.addEventListener("resize", updateGraphLines);
+        // Repeated check to bind float shifts
+        setInterval(updateGraphLines, 100);
+
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        if (window.innerWidth < 1024) return;
+
+        graphContainer.addEventListener("mousemove", (e) => {
+          const rect = graphContainer.getBoundingClientRect();
+          const x = (e.clientX - (rect.left + rect.width / 2)) / (rect.width / 2);
+          const y = (e.clientY - (rect.top + rect.height / 2)) / (rect.height / 2);
+
+          // Tilt camera container slightly (maximum rotateX(2deg), rotateY(3deg))
+          graphContainer.style.transform = `rotateX(${y * 2}deg) rotateY(${x * -3}deg)`;
+
+          // Offset nodes (limit to approx ±10-15px translation)
+          outerNodes.forEach((node, idx) => {
+            if (!node) return;
+            const fx = (idx + 1) * 3.5; // Max displacement ~14px
+            const fy = (idx + 1) * 2.5; 
+            node.style.setProperty("--tx", `${x * fx}px`);
+            node.style.setProperty("--ty", `${y * fy}px`);
+          });
+        });
+
+        graphContainer.addEventListener("mouseleave", () => {
+          graphContainer.style.transform = "";
+          outerNodes.forEach(node => {
+            if (node) {
+              node.style.setProperty("--tx", "0px");
+              node.style.setProperty("--ty", "0px");
+            }
+          });
+        });
+      }
+      setupHeroGraph();
+
+      // --- 4. Section 1 Interactive Engineering Map ---
+      function setupInteractiveMap() {
+        const nodes = document.querySelectorAll(".map-node");
+        const connectorSvg = document.getElementById("map-connectors");
+        const centerNode = document.getElementById("map-node-center");
+        const detailCard = document.getElementById("map-detail-card");
+
+        const details = {
+          doc: {
+            title: "Documentation",
+            desc: "Checks README format configuration guidelines, structural code instructions, wiki details, and environment files to verify installation clarity.",
+            icon: "book-open",
+            color: "#b6ff42"
+          },
+          code: {
+            title: "Code Quality",
+            desc: "Audits repository formatting tools, linters, static check configs, and framework markers to check if the code matches professional standard guidelines.",
+            icon: "code-2",
+            color: "#8b5cf6"
+          },
+          arch: {
+            title: "Architecture",
+            desc: "Scans structure composition parameters, module files, code separations, and configurations to determine structural health indices.",
+            icon: "layers",
+            color: "#b6ff42"
+          },
+          sec: {
+            title: "Security",
+            desc: "Examines security policy readmes, checks config parameters, detects exposed passwords, and analyzes dependency integrity.",
+            icon: "shield-check",
+            color: "#ff5c5c"
+          },
+          ready: {
+            title: "Readiness Score",
+            desc: "Evaluates comprehensive repository signals, presentation details, and quality metrics to compile a recruiter portfolio index.",
+            icon: "briefcase",
+            color: "#b6ff42"
+          }
+        };
+
+        function updateConnectors() {
+          if (!connectorSvg || !centerNode) return;
+          const containerRect = connectorSvg.getBoundingClientRect();
+          const cRect = centerNode.getBoundingClientRect();
+          const cx = (cRect.left + cRect.width / 2) - containerRect.left;
+          const cy = (cRect.top + cRect.height / 2) - containerRect.top;
+
+          nodes.forEach(node => {
+            const id = node.getAttribute("data-map-node");
+            const line = document.getElementById(`map-l-${id}`);
+            if (line) {
+              const nRect = node.getBoundingClientRect();
+              const nx = (nRect.left + nRect.width / 2) - containerRect.left;
+              const ny = (nRect.top + nRect.height / 2) - containerRect.top;
+              line.setAttribute("x1", cx);
+              line.setAttribute("y1", cy);
+              line.setAttribute("x2", nx);
+              line.setAttribute("y2", ny);
+            }
+          });
+        }
+
+        updateConnectors();
+        window.addEventListener("resize", updateConnectors);
+        setInterval(updateConnectors, 250);
+
+        nodes.forEach(node => {
+          node.addEventListener("mouseenter", () => {
+            const id = node.getAttribute("data-map-node");
+            const data = details[id];
+            if (!data) return;
+
+            // Highlight line
+            const line = document.getElementById(`map-l-${id}`);
+            if (line) {
+              line.setAttribute("stroke", data.color);
+              line.setAttribute("stroke-width", "2.5");
+              line.style.opacity = "1";
+            }
+
+            // Dim other nodes
+            nodes.forEach(n => {
+              if (n !== node) n.style.opacity = "0.4";
+            });
+
+            // Update details block
+            if (detailCard) {
+              detailCard.style.borderColor = data.color;
+              detailCard.style.boxShadow = `0 0 20px ${data.color}15`;
+              document.getElementById("map-detail-title").innerText = data.title;
+              document.getElementById("map-detail-desc").innerText = data.desc;
+              const wrap = document.getElementById("map-detail-icon-wrap");
+              wrap.className = `w-10 h-10 rounded-lg flex items-center justify-center transition-colors`;
+              wrap.style.backgroundColor = `${data.color}18`;
+              wrap.style.color = data.color;
+              document.getElementById("map-detail-icon").setAttribute("data-lucide", data.icon);
+              lucide.createIcons();
+            }
+          });
+
+          node.addEventListener("mouseleave", () => {
+            const id = node.getAttribute("data-map-node");
+            const line = document.getElementById(`map-l-${id}`);
+            if (line) {
+              line.setAttribute("stroke", "rgba(255,255,255,0.05)");
+              line.setAttribute("stroke-width", "1.5");
+              line.style.opacity = "";
+            }
+            nodes.forEach(n => n.style.opacity = "");
+          });
+        });
+      }
+      setupInteractiveMap();
+
+      // --- 5. Scroll Reveal System ---
+      function setupScrollReveal() {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("revealed");
+              observer.unobserve(entry.target);
+            }
+          });
+        }, {
+          threshold: 0.1,
+          rootMargin: "0px 0px -50px 0px"
+        });
+
+        document.querySelectorAll(".reveal, .reveal-left, .reveal-right, .battle-left, .battle-right").forEach(el => {
+          observer.observe(el);
+        });
+      }
+      setupScrollReveal();
+
+      // --- 6. Scroll-Linked Pipeline Sequence ---
+      function setupPipelineScroll() {
+        const steps = document.querySelectorAll(".pipeline-step");
+        const pipelineLine = document.getElementById("pipeline-line");
+        const container = document.querySelector(".relative.max-w-4xl.mx-auto");
+        const bead = document.getElementById("pipeline-bead-node");
+
+        function updatePipeline() {
+          if (!container) return;
+          const rect = container.getBoundingClientRect();
+          const viewH = window.innerHeight;
+          
+          const start = rect.top - viewH / 2;
+          const height = rect.height;
+          const scrolled = -start;
+          const pct = Math.max(0, Math.min(100, (scrolled / height) * 100));
+          
+          if (pipelineLine) {
+            pipelineLine.style.height = `${pct}%`;
+          }
+
+          if (pct > 5 && pct < 95) {
+            bead.classList.remove("hidden");
+          } else {
+            bead.classList.add("hidden");
+          }
+
+          steps.forEach((step) => {
+            const stepRect = step.getBoundingClientRect();
+            const stepCenter = stepRect.top + stepRect.height / 2;
+            const screenCenter = viewH / 2;
+            const circle = step.querySelector(".pipeline-circle");
+
+            if (stepCenter < screenCenter + 100) {
+              step.style.opacity = "1";
+              if (circle) {
+                circle.style.borderColor = "#b6ff42";
+                circle.style.boxShadow = "0 0 12px #b6ff42";
+                circle.style.backgroundColor = "#b6ff42";
+              }
+            } else {
+              step.style.opacity = "0.3";
+              if (circle) {
+                circle.style.borderColor = "";
+                circle.style.boxShadow = "";
+                circle.style.backgroundColor = "";
+              }
+            }
+          });
+        }
+
+        window.addEventListener("scroll", updatePipeline);
+        updatePipeline();
+      }
+      setupPipelineScroll();
+
+      // --- 7. Live Thinking Terminal Simulation ---
+      function setupLiveThinkingAnimation() {
+        const logContainer = document.getElementById("thinking-log");
+        if (!logContainer) return;
+
+        const logLines = [
+          { type: "ok", text: "[DETECTED] README.md found successfully" },
+          { type: "ok", text: "[DETECTED] setup.py config loaded" },
+          { type: "ok", text: "[DETECTED] package.json config active" },
+          { type: "info", text: "[METRICS] Evaluating modular structural nesting" },
+          { type: "ok", text: "[METRICS] Found Jest/PyTest configuration files" },
+          { type: "warn", text: "[SECURITY] Checking configurations for leakage paths" },
+          { type: "ok", text: "[CLASSIFIED] Application Type classified successfully" },
+          { type: "ok", text: "[COMPLETE] Engineering fingerprint compilation complete" }
+        ];
+
+        let index = 0;
+        function addLogLine() {
+          const data = logLines[index];
+          const div = document.createElement("div");
+          
+          const colorClass = data.type === "ok" ? "text-lime" : data.type === "warn" ? "text-coral" : "text-violet";
+          div.innerHTML = `<span class="${colorClass}">${data.text.split(" ")[0]}</span> ${data.text.split(" ").slice(1).join(" ")}`;
+          div.className = "opacity-0 translate-y-1 transition-all duration-300 font-mono";
+          
+          logContainer.appendChild(div);
+          setTimeout(() => div.classList.remove("opacity-0", "translate-y-1"), 50);
+
+          // Limit lines
+          if (logContainer.children.length > 6) {
+            logContainer.removeChild(logContainer.children[0]);
+          }
+
+          index = (index + 1) % logLines.length;
+          setTimeout(addLogLine, 1800);
+        }
+
+        addLogLine();
+      }
+      setupLiveThinkingAnimation();
+
+      // --- 8. Readiness Circle Count Animation ---
+      function setupReadinessCounter() {
+        const targetCircle = document.getElementById("demo-readiness-circle");
+        const targetScore = document.getElementById("demo-readiness-score");
+        if (!targetCircle || !targetScore) return;
+
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const circumference = 2 * Math.PI * 80;
+              const targetVal = 86;
+              const offset = circumference - (targetVal / 100) * circumference;
+              targetCircle.style.strokeDashoffset = offset;
+
+              let currentVal = 0;
+              const interval = setInterval(() => {
+                currentVal += 2;
+                if (currentVal >= targetVal) {
+                  currentVal = targetVal;
+                  clearInterval(interval);
+                }
+                targetScore.innerText = currentVal;
+              }, 30);
+
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.2 });
+
+        observer.observe(targetScore);
+      }
+      setupReadinessCounter();
+
+      // --- 9. Rizz Verdict Sequence ---
+      function setupVerdictAnimation() {
+        const container = document.getElementById("verdict-quote-container");
+        if (!container) return;
+
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              setTimeout(() => {
+                container.classList.remove("opacity-0", "translate-y-4");
+                container.classList.add("opacity-100", "translate-y-0", "shadow-[0_0_20px_rgba(182,255,66,0.05)]", "border-lime/20");
+              }, 300);
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.2 });
+
+        observer.observe(container);
+      }
+      setupVerdictAnimation();
+
+      // --- 10. Background Parallax Grid Scroll ---
+      function setupBackgroundParallax() {
+        const nav = document.querySelector("nav");
+        let lastScrollY = 0;
+        let ticking = false;
+
+        function updateParallax() {
+          document.body.style.backgroundPositionY = `${lastScrollY * -0.05}px`;
+          
+          // Hero scroll Z-compression
+          const hero = document.getElementById("hero-section");
+          if (hero) {
+            const pct = Math.min(1, lastScrollY / window.innerHeight);
+            hero.style.transform = `translateZ(${lastScrollY * -0.4}px) scale(${1 - pct * 0.08})`;
+            hero.style.opacity = 1 - pct * 1.1;
+          }
+
+          ticking = false;
+        }
+
+        window.addEventListener("scroll", () => {
+          lastScrollY = window.scrollY;
+
+          // Sticky nav scroll styles
+          if (nav) {
+            if (lastScrollY > 20) {
+              nav.style.backgroundColor = "rgba(7, 8, 9, 0.95)";
+              nav.style.backdropFilter = "blur(16px)";
+            } else {
+              nav.style.backgroundColor = "rgba(7, 8, 9, 0.85)";
+              nav.style.backdropFilter = "blur(12px)";
+            }
+          }
+
+          if (!ticking) {
+            window.requestAnimationFrame(updateParallax);
+            ticking = true;
+          }
+        });
+      }
+      setupBackgroundParallax();
+
+      // --- 11. Final Form Event Handling ---
+      const finalForm = document.getElementById("analyze-form-final");
+      const finalInput = document.getElementById("repo-input-final");
+      const finalError = document.getElementById("input-error-final");
+      const finalDemo = document.getElementById("demo-btn-final");
+
+      if (finalForm && finalInput) {
+        finalForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const val = finalInput.value.trim();
+          const parsed = parseGitHubUrlHelper(val);
+          if (!parsed) {
+            if (finalError) {
+              finalError.innerText = "That doesn't look like a valid public GitHub repository.";
+              finalError.classList.remove("hidden");
+            }
+            return;
+          }
+          if (finalError) finalError.classList.add("hidden");
+          window.location.href = `/analyze?repo=${parsed.owner}/${parsed.name}`;
+        });
+      }
+
+      if (finalDemo) {
+        finalDemo.addEventListener("click", () => {
+          window.location.href = "/analyze?repo=krishna19072007/repo-rizz";
+        });
+      }
+    });
+  </script>
+</body>
+</html>
