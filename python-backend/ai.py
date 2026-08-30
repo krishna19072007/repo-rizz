@@ -93,7 +93,10 @@ What should the developer fix first? Be specific and actionable."""
                 print(f"[Gemini] Model {model_name} failed: Timeout (20s)")
                 raise Exception("Timeout after 20 seconds")
             except Exception as e:
+                import re
                 last_error = str(e)
+                last_error = re.sub(r"AIzaSy[a-zA-Z0-9_-]{35}", "[REDACTED_API_KEY]", last_error)
+                last_error = re.sub(r"key=[a-zA-Z0-9_-]+", "key=[REDACTED]", last_error, flags=re.IGNORECASE)
                 print(f"[Gemini] Model {model_name} failed: {last_error[:100]}")
                 if "503" not in last_error and "404" not in last_error:
                     break

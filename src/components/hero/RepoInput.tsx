@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -22,7 +22,7 @@ export function RepoInput({ variant = "hero", className }: RepoInputProps) {
       e.preventDefault();
 
       if (demo) {
-        router.push("/analyze?demo=true");
+        router.push("/analyze?repo=krishna19072007/repo-rizz");
         return;
       }
 
@@ -54,14 +54,7 @@ export function RepoInput({ variant = "hero", className }: RepoInputProps) {
           )}
           style={{ background: "var(--surface)" }}
         >
-          <span
-            className={cn(
-              "font-mono text-text-secondary mr-3 select-none",
-              isHero ? "text-base" : "text-sm"
-            )}
-          >
-            github.com/
-          </span>
+          
           <input
             type="text"
             value={value}
@@ -71,7 +64,7 @@ export function RepoInput({ variant = "hero", className }: RepoInputProps) {
             }}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            placeholder="owner/repository"
+            placeholder={isFocused ? "" : "ENTER GITHUB REPO LINK HERE..."}
             className={cn(
               "flex-1 bg-transparent outline-none placeholder:text-text-secondary/40 font-mono",
               isHero ? "text-lg" : "text-sm"
@@ -126,10 +119,13 @@ export function RepoInput({ variant = "hero", className }: RepoInputProps) {
             )}
           >
             <Zap className="w-3 h-3" />
-            TRY DEMO
+            TRY REPO RIZZ &rarr;
           </button>
         </div>
       )}
     </div>
   );
 }
+
+
+

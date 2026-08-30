@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>History | Repo Rizz</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: '#070809',
+            surface: '#0f1115',
+            'surface-elevated': '#181b21',
+            border: '#272a30',
+            lime: '#b6ff42',
+            violet: '#8b5cf6',
+            coral: '#ff5c5c',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #070809;
+      color: #ffffff;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+  </style>
+</head>
+<body class="min-h-full flex flex-col noise-overlay">
+
+  <!-- Navbar -->
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-border" style="background: rgba(7, 8, 9, 0.85); backdrop-filter: blur(12px);">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <button id="logo-btn" class="relative w-8 h-8 focus:outline-none focus:ring-2 focus:ring-lime rounded-sm transition-transform hover:scale-105">
+          <img src="/static/logo.png" alt="Repo Rizz Logo" class="object-contain w-full h-full">
+        </button>
+        <a href="/" class="flex items-center">
+          <span class="text-lg font-semibold tracking-tight hover:opacity-80 transition-opacity">
+            REPO <span class="text-lime">RIZZ</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="hidden md:flex items-center gap-1">
+        <a href="/" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-surface">Home</a>
+        <a href="/analyze" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-surface">Repo's Rizz</a>
+        <a href="/compare" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-surface">Repo Battle</a>
+        <a href="/history" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-lime bg-surface-elevated">History</a>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="https://github.com/krishna19072007/repo-rizz" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white text-sm transition-colors flex items-center gap-1">
+          <i data-lucide="github" class="w-4 h-4"></i> GitHub
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- History Content -->
+  <main class="flex-1 flex flex-col px-6 pt-24 pb-32 max-w-4xl mx-auto w-full">
+    <div class="text-center mb-12">
+      <a href="/" class="text-xs font-mono mb-8 inline-block text-gray-400 hover:text-lime transition-colors">
+        &larr; Back to Home
+      </a>
+      <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-white">
+        ANALYSIS <span class="text-lime">HISTORY</span>
+      </h1>
+      <p class="text-sm max-w-lg mx-auto text-gray-400">
+        View your past repository analyses and track improvements over time.
+      </p>
+    </div>
+
+    <!-- Dynamic History Container -->
+    <div id="history-container" class="w-full space-y-4">
+      <!-- Empty state (default) -->
+      <div id="empty-state" class="text-center py-20">
+        <i data-lucide="clock" class="w-12 h-12 mx-auto mb-4 text-gray-600 opacity-40"></i>
+        <h2 class="text-xl font-semibold mb-2 text-white">No analyses yet</h2>
+        <p class="text-sm mb-8 text-gray-400">Analyze a repository to see it appear here.</p>
+        <a href="/analyze" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all hover:scale-[1.02] bg-lime text-black">
+          Start Analyzing <i data-lucide="arrow-right" class="w-4 h-4 text-black"></i>
+        </a>
+      </div>
+
+      <!-- History List (hidden by default) -->
+      <div id="history-list" class="hidden space-y-4">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-border mt-auto py-8 bg-bg">
+    <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex flex-col items-center md:items-start text-center md:text-left">
+        <span class="text-lg font-bold tracking-tight text-white">
+          REPO <span class="text-lime">RIZZ</span>
+        </span>
+        <p class="text-xs mt-1 text-gray-500">
+          Advanced GitHub repository analysis for developers.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-6">
+        <a href="/about" class="text-sm text-gray-400 hover:text-lime transition-colors">About</a>
+        <button id="privacy-btn" class="text-sm text-gray-400 cursor-not-allowed transition-opacity hover:opacity-70">
+          Privacy Policy
+        </button>
+        <a href="https://github.com/krishna19072007/repo-rizz" target="_blank" rel="noopener noreferrer" class="text-sm text-gray-400 hover:text-lime transition-colors">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Brand Modal -->
+  <div id="brand-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm modal-close"></div>
+    <div class="relative w-full max-w-md rounded-2xl overflow-hidden border border-border bg-surface shadow-2xl p-10 flex flex-col items-center text-center z-10">
+      <button class="absolute top-4 right-4 p-2 rounded-full text-gray-400 hover:text-white hover:bg-surface-elevated transition-colors modal-close">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="relative w-32 h-32 mb-6">
+        <img src="/static/logo.png" alt="Repo Rizz Logo" class="object-contain w-full h-full">
+      </div>
+      
+      <h2 class="text-3xl font-bold tracking-tight mb-2 text-white">
+        REPO <span class="text-lime">RIZZ</span>
+      </h2>
+      
+      <p class="text-sm text-gray-400 mb-6">
+        AI-powered GitHub repository analysis and scoring engine.
+      </p>
+      
+      <div class="w-full border-t border-border pt-6 flex justify-center space-x-6">
+        <a href="https://github.com/krishna19072007/repo-rizz" target="_blank" rel="noopener noreferrer" class="text-xs font-mono tracking-wider text-gray-400 hover:text-lime transition-colors">
+          SOURCE CODE
+        </a>
+        <a href="/about" class="text-xs font-mono tracking-wider text-gray-400 hover:text-lime transition-colors">
+          ABOUT
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const history = JSON.parse(localStorage.getItem("analysis_history") || "[]");
+      const emptyState = document.getElementById("empty-state");
+      const historyList = document.getElementById("history-list");
+
+      if (history.length > 0) {
+        emptyState.classList.add("hidden");
+        historyList.classList.remove("hidden");
+
+        historyList.innerHTML = history.map(item => `
+          <div class="p-6 rounded-2xl border border-border bg-surface hover:border-lime/30 transition-all flex items-center justify-between">
+            <div class="space-y-1">
+              <h3 class="text-lg font-bold text-white">${item.owner}/<span class="text-lime">${item.name}</span></h3>
+              <p class="text-xs text-gray-500">Analyzed on ${new Date(item.time).toLocaleDateString()} at ${new Date(item.time).toLocaleTimeString()}</p>
+            </div>
+            <div class="flex items-center gap-6">
+              <div class="text-right">
+                <span class="text-3xl font-bold font-mono text-lime">${item.score}</span>
+                <span class="text-xs text-gray-500 font-mono">/100</span>
+              </div>
+              <a href="/analyze?repo=${item.owner}/${item.name}" class="p-3 rounded-xl bg-surface-elevated hover:bg-surface-elevated/80 border border-border text-white transition-all flex items-center justify-center">
+                <i data-lucide="arrow-right" class="w-4 h-4 text-lime"></i>
+              </a>
+            </div>
+          </div>
+        `).join("");
+        lucide.createIcons();
+      }
+    });
+  </script>
+</body>
+</html>

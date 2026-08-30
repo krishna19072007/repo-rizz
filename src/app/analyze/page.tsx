@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -182,11 +182,11 @@ function InputView() {
 
         <div className="mt-6 flex items-center justify-center gap-4">
           <button
-            onClick={() => router.push("/analyze?demo=true")}
+            onClick={() => router.push("/analyze?repo=krishna19072007/repo-rizz")}
             className="text-xs font-mono transition-colors hover:text-lime"
             style={{ color: "var(--text-secondary)" }}
           >
-            TRY DEMO →
+            TRY REPO RIZZ &rarr;
           </button>
         </div>
       </div>
@@ -253,7 +253,7 @@ function ResultsView({
           className="py-3 text-center text-xs font-mono"
           style={{ background: "var(--violet-dim)", color: "var(--violet)" }}
         >
-          DEMO ANALYSIS — Using fixture data, not live GitHub data
+          DEMO ANALYSIS â€” Using fixture data, not live GitHub data
         </div>
       )}
 
@@ -431,9 +431,9 @@ function ResultsView({
         {/* Footer */}
         <div className="text-center pt-8 border-t border-border space-y-3">
           <p className="text-xs font-mono" style={{ color: "var(--text-secondary)" }}>
-            DETERMINISTIC ANALYSIS · Scoring model v{result.scoringVersion || "3.0"} · Completed in {result.analysisTimeMs}ms ·{" "}
+            DETERMINISTIC ANALYSIS Â· Scoring model v{result.scoringVersion || "3.0"} Â· Completed in {result.analysisTimeMs}ms Â·{" "}
             {result.aiUnavailable
-              ? "AI insights unavailable — deterministic analysis is still available"
+              ? "AI insights unavailable â€” deterministic analysis is still available"
               : "AI-assisted insights enabled"}
           </p>
           {result.limitations && result.limitations.length > 0 && (
@@ -444,7 +444,7 @@ function ResultsView({
               <ul className="space-y-0.5">
                 {[...new Set(result.limitations)].map((lim, i) => (
                   <li key={i} className="text-[10px] font-mono" style={{ color: "var(--text-secondary)", opacity: 0.7 }}>
-                    · {lim}
+                    Â· {lim}
                   </li>
                 ))}
               </ul>
@@ -469,3 +469,5 @@ export default function AnalyzePage() {
     </Suspense>
   );
 }
+
+

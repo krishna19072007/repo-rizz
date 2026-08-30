@@ -29,6 +29,15 @@ def get_github_headers():
         headers["Authorization"] = f"Bearer {token.strip()}"
     return headers
 
+def sanitize_error_msg(msg: str) -> str:
+    if not msg:
+        return ""
+    import re
+    msg = re.sub(r"ghp_[a-zA-Z0-9]{36}", "[REDACTED_GITHUB_TOKEN]", msg)
+    msg = re.sub(r"Bearer\s+[a-zA-Z0-9._-]+", "Bearer [REDACTED]", msg, flags=re.IGNORECASE)
+    msg = re.sub(r"access_token=[a-zA-Z0-9._-]+", "access_token=[REDACTED]", msg, flags=re.IGNORECASE)
+    return msg
+
 async def handle_response(resp: httpx.Response):
     if resp.status_code == 200:
         return resp.json()
@@ -40,25 +49,32 @@ async def handle_response(resp: httpx.Response):
         limit_remaining = resp.headers.get("X-RateLimit-Remaining")
         if limit_remaining == "0" or resp.status_code == 429 or "rate limit" in resp.text.lower():
             raise GitHubRateLimitError("GitHub API rate limit exceeded. Configure a GitHub token or try again later.")
-        raise GitHubServiceError(f"GitHub API forbidden: {resp.text}")
+        sanitized_text = sanitize_error_msg(resp.text)
+        raise GitHubServiceError(f"GitHub API forbidden: {sanitized_text}")
     if resp.status_code >= 500:
         raise GitHubServiceError(f"GitHub service error: {resp.status_code}")
     
     # other non-200
-    resp.raise_for_status()
+    try:
+        resp.raise_for_status()
+    except Exception as e:
+        sanitized_msg = sanitize_error_msg(str(e))
+        raise GitHubServiceError(f"HTTP error status: {sanitized_msg}")
 
 async def safe_request(client: httpx.AsyncClient, url: str, return_empty_on_error: bool = False):
     try:
         resp = await client.get(url)
         return await handle_response(resp)
-    except httpx.RequestError:
+    except httpx.RequestError as e:
         if return_empty_on_error: return None
-        raise GitHubNetworkError("GitHub unavailable due to network timeout or error.")
+        sanitized_msg = sanitize_error_msg(str(e))
+        raise GitHubNetworkError(f"GitHub unavailable due to network timeout or error: {sanitized_msg}")
     except (GitHubRateLimitError, GitHubNotFoundError, GitHubServiceError, GitHubNetworkError):
         raise
     except httpx.HTTPStatusError as e:
         if return_empty_on_error: return None
-        raise GitHubServiceError(f"HTTP error: {e}")
+        sanitized_msg = sanitize_error_msg(str(e))
+        raise GitHubServiceError(f"HTTP error: {sanitized_msg}")
 
 async def get_repo(owner: str, name: str, client: httpx.AsyncClient):
     return await safe_request(client, f"https://api.github.com/repos/{owner}/{name}")
@@ -134,8 +150,6 @@ async def fetch_analysis_input(owner: str, name: str):
 
         async def get_file_variants(*paths):
             for p in paths:
-                # We can optimize by looking into `tree` before fetching!
-                # If tree is populated, only fetch if path exists in tree
                 if tree and isinstance(tree, list):
                     found = False
                     for item in tree:
@@ -145,7 +159,6 @@ async def fetch_analysis_input(owner: str, name: str):
                             break
                     if not found:
                         continue
-                    # Fetch using actual case
                     content = await get_file_content(owner, name, p_actual, client)
                     if content: return content
                 else:
@@ -176,6 +189,42 @@ async def fetch_analysis_input(owner: str, name: str):
             get_json_variants("package.json"),
         )
 
+        important_file_keys = [
+            "tsconfig.json", "jsconfig.json", ".gitignore",
+            "eslint.config.js", "eslint.config.mjs", "eslint.config.cjs", ".eslintrc.js", ".eslintrc.json", ".eslintrc",
+            "prettier.config.js", "prettier.config.mjs", "prettier.config.cjs", ".prettierrc", ".prettierrc.json",
+            "requirements.txt", "pyproject.toml", "Pipfile", "setup.py",
+            "supabase/config.toml"
+        ]
+        
+        backend_entrypoints = ["python-backend/main.py", "python-backend/app.py", "backend/main.py", "backend/app.py", "server.js", "app.js", "main.py", "app.py"]
+        
+        paths_to_fetch = []
+        if isinstance(tree, list):
+            for key in important_file_keys:
+                found_path = next((item.get("path") for item in tree if item.get("path", "").lower() == key.lower() or item.get("path", "").lower().endswith("/" + key.lower())), None)
+                if found_path:
+                    paths_to_fetch.append((key, found_path))
+            
+            for be in backend_entrypoints:
+                found_path = next((item.get("path") for item in tree if item.get("path", "").endswith(be) and item.get("path") not in [p for _, p in paths_to_fetch]), None)
+                if found_path and len(paths_to_fetch) < 15:
+                    paths_to_fetch.append((be, found_path))
+                    
+            migration_path = next((item.get("path") for item in tree if item.get("path", "").startswith("supabase/migrations/") and item.get("path", "").endswith(".sql")), None)
+            if migration_path and len(paths_to_fetch) < 15:
+                paths_to_fetch.append(("supabase_migration", migration_path))
+
+        important_files = {}
+        if paths_to_fetch:
+            fetched_contents = await asyncio.gather(*[
+                get_file_content(owner, name, p, client)
+                for _, p in paths_to_fetch
+            ])
+            for (key, _), content in zip(paths_to_fetch, fetched_contents):
+                if content:
+                    important_files[key] = content
+
         return {
             "repo": repo,
             "languages": languages,
@@ -191,5 +240,6 @@ async def fetch_analysis_input(owner: str, name: str):
             "security": security,
             "changelog": changelog,
             "codeowners": codeowners,
-            "packageJson": pkg_json
+            "packageJson": pkg_json,
+            "importantFiles": important_files
         }

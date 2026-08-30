@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Repository Analysis | Repo Rizz</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: '#070809',
+            surface: '#0f1115',
+            'surface-elevated': '#181b21',
+            border: '#272a30',
+            lime: '#b6ff42',
+            violet: '#8b5cf6',
+            coral: '#ff5c5c',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #070809;
+      color: #ffffff;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+    
+    .chevron-transition {
+      transition: transform 0.2s ease-in-out;
+    }
+    .chevron-rotated {
+      transform: rotate(180deg);
+    }
+
+    /* Entrance animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-fade-in-up {
+      animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .animate-fade-in-up {
+        animation: none !important;
+        transform: none !important;
+        opacity: 1 !important;
+      }
+      .chevron-transition {
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-full flex flex-col noise-overlay">
+
+  <!-- Navbar -->
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-border" style="background: rgba(7, 8, 9, 0.85); backdrop-filter: blur(12px);">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <button id="logo-btn" class="relative w-8 h-8 focus:outline-none focus:ring-2 focus:ring-lime rounded-sm transition-transform hover:scale-105">
+          <img src="/static/logo.png" alt="Repo Rizz Logo" class="object-contain w-full h-full">
+        </button>
+        <a href="/" class="flex items-center">
+          <span class="text-lg font-semibold tracking-tight hover:opacity-80 transition-opacity">
+            REPO <span class="text-lime">RIZZ</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="hidden md:flex items-center gap-1">
+        <a href="/" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-surface">Home</a>
+        <a href="/analyze" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-lime bg-surface-elevated">Repo's Rizz</a>
+        <a href="/compare" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-surface">Repo Battle</a>
+        <a href="/history" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-surface">History</a>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="https://github.com/krishna19072007/repo-rizz" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white text-sm transition-colors flex items-center gap-1">
+          <i data-lucide="github" class="w-4 h-4"></i> GitHub
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Dynamic Content Area -->
+  <main class="flex-1 flex flex-col w-full max-w-[1600px] mx-auto px-4 md:px-8 lg:w-[90vw] lg:px-0 pt-28 pb-32">
+    
+    <!-- Phase 1: Input Form -->
+    <div id="input-phase" class="hidden max-w-xl w-full mx-auto text-center py-12 animate-fade-in-up">
+      <h1 class="text-3xl font-bold mb-4">ANALYZE A <span class="text-lime">REPOSITORY</span></h1>
+      <p class="text-sm text-gray-400 mb-8">Enter a public GitHub repository link below to generate its Repo Rizz engineering readiness report.</p>
+      
+      <form id="direct-analyze-form" class="relative">
+        <div class="relative flex items-center rounded-2xl border border-border hover:border-lime/30 bg-surface px-6 py-4 transition-all focus-within:border-lime/40">
+          <input 
+            type="text" 
+            id="direct-repo-input"
+            placeholder="ENTER GITHUB REPO LINK HERE..." 
+            class="flex-1 bg-transparent outline-none font-mono text-lg text-white placeholder:text-gray-600"
+            required
+          >
+          <button type="submit" class="p-2 rounded-xl bg-lime hover:scale-105 transition-transform flex items-center justify-center text-bg font-bold">
+            <i data-lucide="arrow-right" class="w-5 h-5 text-black"></i>
+          </button>
+        </div>
+        <p id="direct-input-error" class="hidden text-coral text-xs font-mono text-left mt-2 pl-2"></p>
+      </form>
+    </div>
+
+    <!-- Phase 2: Analyzing / Loading Pipeline -->
+    <div id="analyzing-phase" class="hidden max-w-2xl w-full mx-auto py-12">
+      <div class="text-center mb-10">
+        <p class="text-xs font-mono tracking-[0.3em] mb-3 text-gray-400">REPO RIZZ ANALYSIS</p>
+        <p id="analyzing-repo-name" class="text-2xl font-semibold text-white"></p>
+      </div>
+
+      <!-- Rendered Pipeline Steps -->
+      <div id="pipeline-steps-container" class="space-y-1"></div>
+    </div>
+
+    <!-- Phase 3: Error State -->
+    <div id="error-phase" class="hidden max-w-xl w-full mx-auto text-center py-20 animate-fade-in-up">
+      <div class="p-8 rounded-2xl border border-coral/30 bg-surface">
+        <div class="w-12 h-12 rounded-full bg-coral/10 flex items-center justify-center mx-auto mb-4">
+          <i data-lucide="alert-circle" class="w-6 h-6 text-coral"></i>
+        </div>
+        <h2 class="text-xl font-semibold mb-2 text-coral">Analysis Failed</h2>
+        <p id="error-phase-msg" class="text-sm mb-6 text-gray-400 leading-relaxed"></p>
+        <div class="flex items-center justify-center gap-4">
+          <a href="/analyze" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm bg-surface-elevated hover:bg-surface-elevated/80 border border-border text-white transition-all">
+            <i data-lucide="rotate-ccw" class="w-4 h-4 text-lime"></i> Try Again
+          </a>
+          <a href="/" class="text-sm text-gray-400 hover:text-lime transition-colors">Go Home</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 4: Results Dashboard -->
+    <div id="results-phase" class="hidden space-y-12">
+      
+      <!-- Back button -->
+      <div class="flex items-center justify-between">
+        <a href="/analyze" class="flex items-center gap-2 text-sm text-gray-400 hover:text-lime transition-colors">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i> Analyze Another
+        </a>
+        <a id="github-link" href="#" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-sm text-gray-400 hover:text-lime transition-colors">
+          View on GitHub <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+        </a>
+      </div>
+
+      <!-- Repo Header -->
+      <section class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-border animate-fade-in-up" style="opacity: 0; animation-delay: 50ms;">
+        <div>
+          <div class="flex items-center gap-3">
+            <h1 id="repo-title" class="text-3xl font-extrabold text-white"></h1>
+            <span id="repo-type-badge" class="px-2.5 py-0.5 rounded text-xs font-mono bg-surface-elevated text-gray-400"></span>
+          </div>
+          <p id="repo-desc" class="text-sm text-gray-400 mt-2 max-w-2xl"></p>
+        </div>
+        <div class="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface border border-border self-start md:self-center">
+          <i data-lucide="star" class="w-4 h-4 text-lime"></i>
+          <span id="repo-stars" class="font-mono text-sm font-bold text-white"></span>
+          <span class="text-xs text-gray-500">STARS</span>
+        </div>
+      </section>
+
+      <!-- Resume Readiness Hero -->
+      <section id="readiness-hero" class="rounded-2xl border border-border p-8 flex flex-col md:flex-row gap-8 relative overflow-hidden bg-surface animate-fade-in-up" style="opacity: 0; animation-delay: 100ms;">
+        <!-- Glow Overlay -->
+        <div class="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-lime/5 blur-3xl pointer-events-none"></div>
+
+        <!-- Large score ring -->
+        <div class="flex flex-col items-center justify-center text-center md:border-r border-border md:pr-8 min-w-[220px]">
+          <span class="text-[11px] font-mono tracking-[0.3em] text-gray-500 uppercase mb-4">RESUME READINESS</span>
+          <div id="hero-score-svg" class="relative inline-flex items-center justify-center mb-4">
+            <!-- Rendered dynamically -->
+          </div>
+          <span id="hero-status-badge" class="inline-block px-5 py-1.5 rounded-full text-xs font-mono font-bold tracking-wider"></span>
+        </div>
+
+        <div class="flex-1 space-y-6">
+          <h2 class="text-xl font-bold text-white uppercase tracking-wide">Resume Readiness Assessment</h2>
+          <p id="hero-summary" class="text-sm leading-relaxed text-gray-400 max-w-2xl"></p>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+            <div>
+              <h3 class="text-xs font-mono font-semibold text-lime uppercase mb-2 tracking-wider">Key Strengths</h3>
+              <ul id="hero-strengths" class="space-y-1.5 text-xs text-gray-400"></ul>
+            </div>
+            <div>
+              <h3 class="text-xs font-mono font-semibold text-coral uppercase mb-2 tracking-wider">Needs Improvement</h3>
+              <ul id="hero-weaknesses" class="space-y-1.5 text-xs text-gray-400"></ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Rizz Verdict & Radar Fingerprint grid -->
+      <section class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+        <!-- Left: Rizz Verdict -->
+        <div class="lg:col-span-2 flex flex-col justify-center p-8 rounded-2xl border border-border bg-surface relative animate-fade-in-up" style="opacity: 0; animation-delay: 150ms;">
+          <span class="absolute -top-3 left-6 px-3 py-0.5 rounded text-[10px] font-mono tracking-[0.2em] bg-bg border border-border text-gray-400 uppercase">
+            Rizz Verdict
+          </span>
+          <p id="rizz-verdict-text" class="text-xl font-medium text-white italic leading-relaxed pt-2"></p>
+        </div>
+
+        <!-- Right: Radar Fingerprint SVG -->
+        <div class="flex items-center justify-center p-6 border border-border rounded-2xl bg-surface animate-fade-in-up" style="opacity: 0; animation-delay: 200ms;">
+          <div id="radar-container" class="w-full max-w-[540px]">
+            <!-- Radar SVG dynamically rendered here -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 4 Dimension Cards grid -->
+      <section class="space-y-6 animate-fade-in-up" style="opacity: 0; animation-delay: 250ms;">
+        <h2 class="text-xs font-mono tracking-[0.3em] text-gray-400">DIMENSION BREAKDOWN</h2>
+        <div id="dimension-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+      </section>
+
+      <!-- Recommendations -->
+      <section id="recommendations-section" class="space-y-6 hidden animate-fade-in-up" style="opacity: 0; animation-delay: 300ms;">
+        <h2 class="text-xs font-mono tracking-[0.3em] text-gray-400 uppercase">Fix These Before Your Resume</h2>
+        <div id="recommendations-container" class="space-y-4"></div>
+      </section>
+
+      <!-- AI Interpretation / Summary -->
+      <section id="ai-summary-container" class="hidden p-6 rounded-2xl border border-border bg-surface animate-fade-in-up" style="opacity: 0; animation-delay: 350ms;">
+        <p class="text-[10px] font-mono tracking-[0.2em] mb-2 text-violet uppercase">AI Interpretation</p>
+        <p id="ai-summary-text" class="text-sm text-gray-400 leading-relaxed"></p>
+      </section>
+
+      <!-- Evidence Diagnostics Panel -->
+      <section id="diagnostics-container" class="hidden p-6 rounded-2xl border border-border bg-surface animate-fade-in-up" style="opacity: 0; animation-delay: 380ms;">
+        <div class="flex items-center justify-between cursor-pointer" onclick="toggleDiagnosticsPanel()">
+          <div class="flex items-center gap-2">
+            <i data-lucide="shield-alert" class="w-4 h-4 text-lime"></i>
+            <h2 class="text-xs font-mono tracking-[0.3em] text-gray-400 uppercase">Evidence Diagnostics Panel</h2>
+          </div>
+          <i data-lucide="chevron-down" id="diagnostics-chevron" class="chevron-transition w-4 h-4 text-gray-400"></i>
+        </div>
+        
+        <div id="diagnostics-body" class="hidden mt-6 pt-6 border-t border-border space-y-6">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+
+      <!-- Limitations footer -->
+      <footer class="pt-8 border-t border-border text-center animate-fade-in-up" style="opacity: 0; animation-delay: 400ms;">
+        <div id="limitations-container" class="max-w-2xl mx-auto text-left space-y-1">
+          <p class="text-[10px] font-mono text-gray-500">LIMITATIONS:</p>
+          <ul id="limitations-list" class="text-[10px] font-mono text-gray-500 list-disc list-inside space-y-0.5"></ul>
+        </div>
+        <p id="analysis-metadata-footer" class="text-[10px] font-mono text-gray-500 mt-8"></p>
+      </footer>
+
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-border mt-auto py-8 bg-bg">
+    <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex flex-col items-center md:items-start text-center md:text-left">
+        <span class="text-lg font-bold tracking-tight text-white">
+          REPO <span class="text-lime">RIZZ</span>
+        </span>
+        <p class="text-xs mt-1 text-gray-500">
+          Advanced GitHub repository analysis for developers.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-6">
+        <a href="/about" class="text-sm text-gray-400 hover:text-lime transition-colors">About</a>
+        <button id="privacy-btn" class="text-sm text-gray-400 cursor-not-allowed transition-opacity hover:opacity-70">
+          Privacy Policy
+        </button>
+        <a href="https://github.com/krishna19072007/repo-rizz" target="_blank" rel="noopener noreferrer" class="text-sm text-gray-400 hover:text-lime transition-colors">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Brand Modal -->
+  <div id="brand-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm modal-close"></div>
+    <div class="relative w-full max-w-md rounded-2xl overflow-hidden border border-border bg-surface shadow-2xl p-10 flex flex-col items-center text-center z-10">
+      <button class="absolute top-4 right-4 p-2 rounded-full text-gray-400 hover:text-white hover:bg-surface-elevated transition-colors modal-close">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="relative w-32 h-32 mb-6">
+        <img src="/static/logo.png" alt="Repo Rizz Logo" class="object-contain w-full h-full">
+      </div>
+      
+      <h2 class="text-3xl font-bold tracking-tight mb-2 text-white">
+        REPO <span class="text-lime">RIZZ</span>
+      </h2>
+      
+      <p class="text-sm text-gray-400 mb-6">
+        AI-powered GitHub repository analysis and scoring engine.
+      </p>
+      
+      <div class="w-full border-t border-border pt-6 flex justify-center space-x-6">
+        <a href="https://github.com/krishna19072007/repo-rizz" target="_blank" rel="noopener noreferrer" class="text-xs font-mono tracking-wider text-gray-400 hover:text-lime transition-colors">
+          SOURCE CODE
+        </a>
+        <a href="/about" class="text-xs font-mono tracking-wider text-gray-400 hover:text-lime transition-colors">
+          ABOUT
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+  <script>
+    // Constants for Radar Drawing
+    const VIRTUAL_W = 540;
+    const VIRTUAL_H = 500;
+    const RADAR_CX = VIRTUAL_W / 2;
+    const RADAR_CY = VIRTUAL_H / 2;
+    const RADAR_RADIUS = 125;
+    const LABEL_RADIUS = RADAR_RADIUS + 42;
+    const RADAR_DIMENSION_IDS = ["documentation", "codeQuality", "architecture", "security"];
+
+    const PIPELINE_STEPS = [
+      { id: "fetch", order: 1, label: "FETCHING REPOSITORY" },
+      { id: "metadata", order: 2, label: "READING METADATA" },
+      { id: "tree", order: 3, label: "INSPECTING FILE TREE" },
+      { id: "docs", order: 4, label: "ANALYZING DOCUMENTATION" },
+      { id: "activity", order: 5, label: "ANALYZING ACTIVITY" },
+      { id: "cicd", order: 6, label: "INSPECTING CI/CD" },
+      { id: "security", order: 7, label: "CHECKING SECURITY SIGNALS" },
+      { id: "deps", order: 8, label: "ANALYZING DEPENDENCIES" },
+      { id: "health", order: 9, label: "CALCULATING HEALTH" },
+      { id: "insights", order: 10, label: "GENERATING INSIGHTS" },
+    ];
+
+    function getResumeReadinessLabel(status, score) {
+      const s = String(status).toLowerCase().replace(/_/g, "");
+      if (s === "exceptional" || s === "ready" || score >= 80) return "READY";
+      if (s === "almostready" || s === "mostlyready" || score >= 60) return "ALMOST READY";
+      if (s === "needswork" || score >= 40) return "NEEDS WORK";
+      return "NOT READY";
+    }
+
+    function getResumeReadinessColor(status, score) {
+      const s = String(status).toLowerCase().replace(/_/g, "");
+      if (s === "exceptional" || s === "ready" || score >= 80) return "#b6ff42"; // lime
+      if (s === "almostready" || s === "mostlyready" || score >= 60) return "#8b5cf6"; // violet
+      return "#ff5c5c"; // coral
+    }
+
+    function drawRadarChart(dimensions) {
+      const radarDimensions = RADAR_DIMENSION_IDS
+        .map(id => dimensions.find(d => d.id === id))
+        .filter(Boolean);
+
+      const angleStep = (Math.PI * 2) / Math.max(1, radarDimensions.length);
+      const points = radarDimensions.map((dim, i) => {
+        const angle = i * angleStep - Math.PI / 2;
+        const isNA = dim.summary === "N/A" || dim.applicable === false;
+        const score = isNA ? 0 : dim.score / 100;
+        const radius = RADAR_RADIUS * score;
+
+        return {
+          x: RADAR_CX + Math.cos(angle) * radius,
+          y: RADAR_CY + Math.sin(angle) * radius,
+          labelX: RADAR_CX + Math.cos(angle) * LABEL_RADIUS,
+          labelY: RADAR_CY + Math.sin(angle) * LABEL_RADIUS,
+          innerX: RADAR_CX + Math.cos(angle) * RADAR_RADIUS,
+          innerY: RADAR_CY + Math.sin(angle) * RADAR_RADIUS,
+          textAnchor: Math.abs(Math.cos(angle)) < 0.1 ? "middle" : Math.cos(angle) > 0 ? "start" : "end",
+          angle,
+          dim,
+          score,
+          isNA
+        };
+      });
+
+      // Polygon path
+      const polygonPath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ") + " Z";
+
+      // Grid paths
+      const gridPaths = [0.25, 0.5, 0.75, 1].map((s) => {
+        return points.map((p, i) => {
+          const x = RADAR_CX + Math.cos(p.angle) * RADAR_RADIUS * s;
+          const y = RADAR_CY + Math.sin(p.angle) * RADAR_RADIUS * s;
+          return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+        }).join(" ") + " Z";
+      });
+
+      const scoreToColor = (score) => {
+        return score >= 80 ? '#b6ff42' : score >= 60 ? '#8b5cf6' : '#ff5c5c';
+      };
+
+      const svgContent = `
+        <svg width="100%" viewBox="0 0 ${VIRTUAL_W} ${VIRTUAL_H}" xmlns="http://www.w3.org/2000/svg">
+          <!-- Grid rings -->
+          ${gridPaths.map(path => `<path d="${path}" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1" />`).join("")}
+
+          <!-- Axis lines -->
+          ${points.map(p => `<line x1="${RADAR_CX}" y1="${RADAR_CY}" x2="${p.innerX}" y2="${p.innerY}" stroke="rgba(255,255,255,0.05)" stroke-width="1" />`).join("")}
+
+          <!-- Score polygon -->
+          <path d="${polygonPath}" fill="rgba(182, 255, 66, 0.08)" stroke="#b6ff42" stroke-width="2" />
+
+          <!-- Score dots -->
+          ${points.map(p => {
+            if (p.isNA) return ''; // Don't draw dots for N/A dimensions
+            return `
+              <g>
+                <circle cx="${p.x}" cy="${p.y}" r="5" fill="${scoreToColor(p.dim.score)}" />
+                <circle cx="${p.x}" cy="${p.y}" r="10" fill="${scoreToColor(p.dim.score)}" opacity="0.15" />
+              </g>
+            `;
+          }).join("")}
+
+          <!-- Labels -->
+          ${points.map(p => {
+            const labelText = p.isNA ? `${p.dim.name} (N/A)` : p.dim.name;
+            return `
+              <text x="${p.labelX}" y="${p.labelY}" text-anchor="${p.textAnchor}" dominant-baseline="middle" fill="#9ca3af" font-size="13" font-family="monospace">
+                ${labelText}
+              </text>
+            `;
+          }).join("")}
+
+          <!-- Center label -->
+          <text x="${RADAR_CX}" y="${RADAR_CY - 5}" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-size="13" font-weight="bold" font-family="monospace">
+            4
+          </text>
+          <text x="${RADAR_CX}" y="${RADAR_CY + 9}" text-anchor="middle" dominant-baseline="middle" fill="#9ca3af" font-size="8" font-family="monospace">
+            DIMENSIONS
+          </text>
+        </svg>
+      `;
+
+      document.getElementById("radar-container").innerHTML = svgContent;
+    }
+
+    function renderDimensionCards(dimensions) {
+      const container = document.getElementById("dimension-cards-container");
+      
+      const scoreToColor = (score) => {
+        return score >= 80 ? '#b6ff42' : score >= 60 ? '#8b5cf6' : '#ff5c5c';
+      };
+
+      const getConfidence = (level) => {
+        return level === 'high' ? 'HIGH CONFIDENCE' : level === 'medium' ? 'MEDIUM CONFIDENCE' : 'LOW CONFIDENCE';
+      };
+
+      const confidenceColors = {
+        high: '#b6ff42',
+        medium: '#8b5cf6',
+        low: '#ff5c5c'
+      };
+
+      container.innerHTML = dimensions.map((dim, index) => {
+        const isNA = dim.summary === "N/A" || dim.applicable === false;
+        const pct = isNA ? 0 : Math.round((dim.score / dim.maxScore) * 100);
+        const color = isNA ? '#9ca3af' : scoreToColor(pct);
+        const circumference = 2 * Math.PI * 22;
+        const offset = circumference - (pct / 100) * circumference;
+        const statusLabel = isNA ? "N/A" : (pct >= 80 ? "STRONG" : pct >= 60 ? "GOOD" : pct >= 40 ? "FAIR" : "WEAK");
+        const scoreDisplay = isNA ? "N/A" : dim.score;
+        const badgeBg = isNA ? 'rgba(156, 163, 175, 0.1)' : `${color}15`;
+
+        return `
+          <div class="border border-border rounded-xl overflow-hidden bg-surface hover:border-gray-700 transition-colors animate-fade-in-up" style="opacity: 0; animation-delay: ${300 + (index * 50)}ms;">
+            <!-- Header button -->
+            <button onclick="toggleDimensionExpand(${index})" class="w-full flex items-center gap-4 p-5 text-left focus:outline-none">
+              <!-- Score ring -->
+              <div class="relative w-12 h-12 flex-shrink-0">
+                <svg width="48" height="48" viewBox="0 0 48 48">
+                  <circle cx="24" cy="24" r="22" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="3" />
+                  <circle cx="24" cy="24" r="22" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round"
+                    stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" transform="rotate(-90 24 24)" />
+                </svg>
+                <span class="absolute inset-0 flex items-center justify-center text-[10px] font-mono font-bold" style="color: ${color}">
+                  ${scoreDisplay}
+                </span>
+              </div>
+
+              <!-- Info -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="text-sm font-semibold uppercase tracking-wide text-white">
+                    ${dim.name}
+                  </h3>
+                  <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded" style="color: ${color}; background: ${badgeBg}">
+                    ${statusLabel}
+                  </span>
+                </div>
+                <p class="text-xs text-gray-400 truncate">
+                  ${dim.summary}
+                </p>
+                <!-- Key evidence preview -->
+                ${dim.evidence.length > 0 ? `
+                  <div class="mt-2 flex flex-col gap-0.5">
+                    ${dim.evidence.slice(0, 3).map(e => `
+                      <span class="text-[10px] font-mono flex items-center gap-1 truncate text-gray-400">
+                        <span class="flex-shrink-0" style="color: ${e.startsWith("✓") ? "#b6ff42" : "#ff5c5c"}">
+                          ${e.startsWith("✓") ? "✓" : "✗"}
+                        </span>
+                        <span class="truncate">${e.replace(/^[✓✗]\s*/, "")}</span>
+                      </span>
+                    `).join("")}
+                  </div>
+                ` : ''}
+              </div>
+
+              <span class="text-[9px] font-mono px-2 py-0.5 rounded hidden sm:inline-block"
+                style="color: ${confidenceColors[dim.confidence] || '#9ca3af'}; background: ${(confidenceColors[dim.confidence] || '#9ca3af')}15">
+                ${getConfidence(dim.confidence)}
+              </span>
+
+              <i data-lucide="chevron-down" id="chevron-${index}" class="chevron-transition w-4 h-4 text-gray-400"></i>
+            </button>
+
+            <!-- Expanded Body -->
+            <div id="expanded-body-${index}" class="hidden px-5 pb-5 space-y-4 border-t border-border">
+              <!-- WHY THIS SCORE? -->
+              <div class="pt-4">
+                <h4 class="text-xs font-mono font-semibold mb-3 flex items-center gap-2 text-lime">
+                  <i data-lucide="help-circle" class="w-3.5 h-3.5 text-lime"></i>
+                  WHY THIS SCORE?
+                </h4>
+
+                <!-- Score breakdown -->
+                <div class="space-y-1 mb-4">
+                  ${dim.rulesApplied.map(rule => {
+                    const ruleParts = rule.split(" = ");
+                    const name = ruleParts[0];
+                    const val = ruleParts[1] || '+0';
+                    const isPositive = val.startsWith("+") && val !== "+0";
+                    return `
+                      <div class="flex items-center justify-between text-xs font-mono">
+                        <span class="text-gray-400">${name}</span>
+                        <span style="color: ${isPositive ? '#b6ff42' : '#9ca3af'}">${val}</span>
+                      </div>
+                    `;
+                  }).join("")}
+                  <div class="flex items-center justify-between text-xs font-mono font-bold pt-1 border-t border-border text-white">
+                    <span>TOTAL</span>
+                    <span style="color: ${color}">${dim.score} / ${dim.maxScore}</span>
+                  </div>
+                </div>
+
+                <!-- Confidence Reason -->
+                ${dim.confidenceReason ? `
+                  <div class="text-[11px] mb-3 p-2 rounded bg-bg text-gray-400">
+                    <span class="font-mono font-semibold text-lime">
+                      ${getConfidence(dim.confidence)}:
+                    </span>
+                    ${dim.confidenceReason}
+                  </div>
+                ` : ''}
+              </div>
+
+              <!-- Evidence -->
+              ${dim.evidence.length > 0 ? `
+                <div>
+                  <h4 class="text-xs font-mono font-semibold mb-2 text-gray-400">EVIDENCE</h4>
+                  <ul class="space-y-1">
+                    ${dim.evidence.map(e => `
+                      <li class="text-xs font-mono flex items-start gap-2 text-white">
+                        <span class="flex-shrink-0 mt-0.5" style="color: ${e.startsWith("✓") ? '#b6ff42' : e.startsWith("✗") ? '#ff5c5c' : '#9ca3af'}">
+                          ${e.startsWith("✓") ? "•" : e.startsWith("✗") ? "•" : "·"}
+                        </span>
+                        ${e.replace(/^[✓✗]\s*/, "")}
+                      </li>
+                    `).join("")}
+                  </ul>
+                </div>
+              ` : ''}
+
+              <!-- Findings -->
+              ${dim.findings.length > 0 ? `
+                <div>
+                  <h4 class="text-xs font-mono font-semibold mb-2 text-gray-400">FINDINGS</h4>
+                  <div class="space-y-2">
+                    ${dim.findings.map(f => {
+                      const title = f.title || f.message || "Finding";
+                      const desc = f.description || f.explanation || "";
+                      const iconColor = f.severity === 'critical' || f.severity === 'warning' || f.status === 'critical' ? 'text-coral' : (f.severity === 'positive' || f.status === 'positive' ? 'text-lime' : 'text-violet');
+                      const iconName = f.severity === 'critical' || f.status === 'critical' ? 'alert-circle' : (f.severity === 'warning' ? 'alert-triangle' : (f.severity === 'positive' || f.status === 'positive' ? 'check' : 'info'));
+                      return `
+                        <div class="flex items-start gap-2 p-2 rounded bg-bg">
+                          <i data-lucide="${iconName}" class="w-3.5 h-3.5 ${iconColor} flex-shrink-0 mt-0.5"></i>
+                          <div class="flex-1 min-w-0">
+                            <p class="text-xs font-medium text-white">${title}</p>
+                            <p class="text-[11px] mt-0.5 text-gray-400">${desc}</p>
+                            ${f.recommendation ? `<p class="text-[11px] mt-1 font-mono text-lime">&rarr; ${f.recommendation}</p>` : ''}
+                          </div>
+                        </div>
+                      `;
+                    }).join("")}
+                  </div>
+                </div>
+              ` : ''}
+
+              <!-- Limitations -->
+              ${dim.limitations.length > 0 ? `
+                <div class="p-3 rounded-lg text-xs bg-bg text-gray-400">
+                  <span class="font-mono font-semibold text-violet">LIMITATIONS: </span>
+                  ${dim.limitations.join("; ")}
+                </div>
+              ` : ''}
+
+              <!-- Recommendation -->
+              <div class="p-3 rounded-lg text-xs bg-surface-elevated text-gray-400">
+                <span class="font-mono font-semibold text-lime">RECOMMENDATION: </span>
+                ${dim.recommendation}
+              </div>
+
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      lucide.createIcons();
+    }
+
+    function toggleDimensionExpand(index) {
+      const body = document.getElementById(`expanded-body-${index}`);
+      const chevron = document.getElementById(`chevron-${index}`);
+      if (body.classList.contains("hidden")) {
+        body.classList.remove("hidden");
+        chevron.classList.add("chevron-rotated");
+      } else {
+        body.classList.add("hidden");
+        chevron.classList.remove("chevron-rotated");
+      }
+    }
+
+    function toggleDiagnosticsPanel() {
+      const body = document.getElementById("diagnostics-body");
+      const chevron = document.getElementById("diagnostics-chevron");
+      if (body.classList.contains("hidden")) {
+        body.classList.remove("hidden");
+        chevron.classList.add("chevron-rotated");
+      } else {
+        body.classList.add("hidden");
+        chevron.classList.remove("chevron-rotated");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const repoParam = urlParams.get("repo");
+
+      const inputPhase = document.getElementById("input-phase");
+      const analyzingPhase = document.getElementById("analyzing-phase");
+      const errorPhase = document.getElementById("error-phase");
+      const resultsPhase = document.getElementById("results-phase");
+
+      const directForm = document.getElementById("direct-analyze-form");
+      const directInput = document.getElementById("direct-repo-input");
+      const directError = document.getElementById("direct-input-error");
+
+      directForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const repo = directInput.value.trim();
+        const parsed = parseGitHubUrlHelper(repo);
+        if (!parsed) {
+          directError.innerText = "That doesn't look like a valid public GitHub repository.";
+          directError.classList.remove("hidden");
+          return;
+        }
+        directError.classList.add("hidden");
+        window.location.href = `/analyze?repo=${parsed.owner}/${parsed.name}`;
+      });
+
+      if (!repoParam) {
+        inputPhase.classList.remove("hidden");
+      } else {
+        const parsed = parseGitHubUrlHelper(repoParam);
+        if (!parsed) {
+          alert("Invalid repository query parameter.");
+          window.location.href = "/analyze";
+          return;
+        }
+
+        // Show Loading Phase
+        analyzingPhase.classList.remove("hidden");
+        document.getElementById("analyzing-repo-name").innerText = `${parsed.owner}/${parsed.name}`;
+        
+        // Progress Pipeline steps
+        const pipelineContainer = document.getElementById("pipeline-steps-container");
+        let currentStepIdx = 0;
+        let pipelineFinished = false;
+        let apiData = null;
+        let apiError = null;
+
+        function updatePipelineUI() {
+          pipelineContainer.innerHTML = PIPELINE_STEPS.map((step, idx) => {
+            let statusIcon = '';
+            let statusClass = 'text-gray-400';
+            let bgClass = '';
+
+            if (idx < currentStepIdx) {
+              statusIcon = `<i data-lucide="check" class="w-4 h-4 text-lime"></i>`;
+              statusClass = 'text-gray-400 opacity-60';
+            } else if (idx === currentStepIdx) {
+              if (apiError) {
+                statusIcon = `<i data-lucide="alert-circle" class="w-4 h-4 text-coral animate-pulse"></i>`;
+                statusClass = 'text-coral font-semibold';
+                bgClass = 'bg-surface-elevated border border-coral/10';
+              } else {
+                statusIcon = `<i data-lucide="loader-2" class="w-4 h-4 text-lime animate-spin"></i>`;
+                statusClass = 'text-lime font-semibold';
+                bgClass = 'bg-surface-elevated';
+              }
+            } else {
+              statusIcon = `<span class="text-xs font-mono text-gray-500">${String(step.order).padStart(2, '0')}</span>`;
+            }
+
+            return `
+              <div class="flex items-center gap-3 px-4 py-3 rounded-lg ${bgClass} ${statusClass} transition-all duration-300">
+                <div class="w-6 h-6 flex items-center justify-center flex-shrink-0">
+                  ${statusIcon}
+                </div>
+                <span class="text-sm font-mono tracking-wide">${step.label}</span>
+                ${idx === currentStepIdx && !apiError ? `
+                  <div class="ml-auto opacity-50 animate-pulse">
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-lime"></i>
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          }).join("");
+          lucide.createIcons();
+        }
+
+        updatePipelineUI();
+
+        // Ticker logic
+        let pipelineTimer = null;
+        function tickPipeline() {
+          if (apiError) return; // Stop ticking on error
+
+          if (currentStepIdx < PIPELINE_STEPS.length - 1) {
+            const nextTime = (apiData !== null) ? 60 : 400;
+            currentStepIdx++;
+            updatePipelineUI();
+            pipelineTimer = setTimeout(tickPipeline, nextTime);
+          } else {
+            pipelineFinished = true;
+            if (apiData) {
+              transitionToResults(apiData);
+            }
+          }
+        }
+        pipelineTimer = setTimeout(tickPipeline, 400);
+
+        function transitionToResults(result) {
+          setTimeout(() => {
+            analyzingPhase.classList.add("hidden");
+            resultsPhase.classList.remove("hidden");
+            renderAllResults(result);
+          }, 800);
+        }
+
+        function renderAllResults(result) {
+          // Populate Identity
+          document.getElementById("repo-title").innerHTML = `${result.repository.owner}/<span class="text-lime">${result.repository.name}</span>`;
+          document.getElementById("repo-desc").innerText = result.repository.description || 'No description provided.';
+          document.getElementById("repo-stars").innerText = result.repository.stars;
+          document.getElementById("repo-type-badge").innerText = result.repositoryType?.type?.replace(/_/g, " ") || "GENERAL";
+          document.getElementById("github-link").href = result.repository.url;
+
+          // Hero Score Ring (220x220)
+          const score = result.resumeReadinessScore;
+          const status = result.resumeReadinessStatus;
+          const label = getResumeReadinessLabel(status, score);
+          const color = getResumeReadinessColor(status, score);
+          const circumference = 2 * Math.PI * 90;
+          const offset = circumference - (score / 100) * circumference;
+
+          document.getElementById("hero-score-svg").innerHTML = `
+            <svg width="220" height="220" viewBox="0 0 220 220" class="mx-auto">
+              <circle cx="110" cy="110" r="90" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="7" />
+              <circle cx="110" cy="110" r="90" fill="none" stroke="${color}" stroke-width="7" stroke-linecap="round"
+                stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" transform="rotate(-90 110 110)"
+                style="transition: stroke-dashoffset 1.4s ease-out;" />
+              <circle cx="110" cy="110" r="90" fill="none" stroke="${color}" stroke-width="3" opacity="0.15" filter="blur(6px)" />
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span id="hero-score" class="text-7xl font-bold font-mono leading-none transition-all duration-700" style="color: ${color};">${score}</span>
+              <span class="text-sm font-mono mt-1 text-gray-500">/ 100</span>
+            </div>
+          `;
+          
+          const statusBadge = document.getElementById("hero-status-badge");
+          statusBadge.innerText = label;
+          statusBadge.style.color = color;
+          statusBadge.style.backgroundColor = `${color}18`;
+
+          document.getElementById("hero-summary").innerText = result.resumeReadinessSummary;
+
+          // Strengths / Weaknesses
+          document.getElementById("hero-strengths").innerHTML = result.resumeReadinessStrengths.map(s => `
+            <li class="flex items-start gap-2">
+              <span class="text-lime flex-shrink-0 mt-0.5">•</span>
+              <span>${s}</span>
+            </li>
+          `).join("");
+
+          document.getElementById("hero-weaknesses").innerHTML = result.resumeReadinessWeaknesses.map(w => `
+            <li class="flex items-start gap-2">
+              <span class="text-coral flex-shrink-0 mt-0.5">•</span>
+              <span>${w}</span>
+            </li>
+          `).join("");
+
+          // Verdict
+          document.getElementById("rizz-verdict-text").innerText = `“${result.rizzVerdict}”`;
+
+          // Draw Radar
+          drawRadarChart(result.engineeringDimensions);
+
+          // Dimension Cards
+          renderDimensionCards(result.engineeringDimensions);
+
+          // Recommendations
+          const recsSection = document.getElementById("recommendations-section");
+          if (result.recommendations && result.recommendations.length > 0) {
+            recsSection.classList.remove("hidden");
+            document.getElementById("recommendations-container").innerHTML = result.recommendations.map((rec, i) => {
+              const bg = rec.priority === 'critical' || rec.priority === 'high' ? '#ff5c5c' : '#8b5cf6';
+              return `
+                <div class="p-4 rounded-xl border border-border flex items-start gap-4 bg-surface">
+                  <span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-mono font-bold flex-shrink-0 mt-0.5" style="background: ${bg}; color: var(--bg);">
+                    ${i + 1}
+                  </span>
+                  <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1">
+                      <h3 class="text-sm font-semibold text-white">${rec.title}</h3>
+                      <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-elevated text-gray-400">
+                        ${rec.category}
+                      </span>
+                    </div>
+                    <p class="text-xs text-gray-400">${rec.description}</p>
+                    ${rec.impact ? `<p class="text-xs font-mono mt-1 text-lime">${rec.impact}</p>` : ''}
+                  </div>
+                </div>
+              `;
+            }).join("");
+          } else {
+            recsSection.classList.add("hidden");
+          }
+
+          // AI Interpretation Summary
+          const aiSummaryContainer = document.getElementById("ai-summary-container");
+          if (result.aiSummary && !result.aiUnavailable) {
+            aiSummaryContainer.classList.remove("hidden");
+            document.getElementById("ai-summary-text").innerText = result.aiSummary;
+          } else {
+            aiSummaryContainer.classList.add("hidden");
+          }
+
+          // Show diagnostics container only if dev/debug mode is active
+          const urlParams = new URLSearchParams(window.location.search);
+          const isDebug = urlParams.has('debug') || urlParams.has('dev');
+          const diagContainer = document.getElementById("diagnostics-container");
+          if (isDebug) {
+            diagContainer.classList.remove("hidden");
+          } else {
+            diagContainer.classList.add("hidden");
+          }
+
+          // Render Evidence Diagnostics
+          const diagBody = document.getElementById("diagnostics-body");
+          if (diagBody && isDebug) {
+            let rrHtml = '';
+            if (result.resumeReadinessBreakdown) {
+              const bd = result.resumeReadinessBreakdown;
+              rrHtml = `
+                <div class="space-y-3 pb-6 border-b border-border">
+                  <h3 class="text-xs font-mono font-bold uppercase tracking-wider text-lime flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-lime"></span>
+                    Portfolio Resume Readiness Calculation
+                  </h3>
+                  <div class="p-4 rounded-xl border border-border bg-bg/50">
+                    <p class="text-xs font-mono text-lime font-bold mb-1.5 uppercase">Overall Math Calculation Breakdown:</p>
+                    <div class="text-xs font-mono text-gray-300 space-y-1.5 mb-4">
+                      <div>Total Earned Points (Numerator): <span class="text-white font-bold">${result.resumeReadinessTotalEarned}</span></div>
+                      <div>Total Maximum Points (Denominator): <span class="text-white font-bold">${result.resumeReadinessTotalMax}</span></div>
+                      <div class="pt-2 border-t border-border/40 mt-1">
+                        Formula: <span class="text-violet">Math.round((${result.resumeReadinessTotalEarned} / ${result.resumeReadinessTotalMax}) * 100)</span> = <span class="text-lime font-bold">${result.resumeReadinessScore} / 100</span>
+                      </div>
+                    </div>
+                    
+                    <p class="text-[10px] font-mono text-gray-500 font-bold mb-2 uppercase tracking-wider">Points Contributions per Category:</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs font-mono">
+                      ${Object.entries(bd).map(([key, val]) => {
+                        const status = val.applicable ? 'APPLICABLE' : 'NOT_APPLICABLE';
+                        const color = val.applicable ? 'text-gray-300' : 'text-gray-600 line-through';
+                        const pointsText = val.applicable ? `${val.earned} / ${val.max} pts` : `0 / 0 pts (${status})`;
+                        return `
+                          <div class="flex justify-between border-b border-border/20 pb-1 ${color}">
+                            <span class="capitalize">${key.replace(/([A-Z])/g, ' $1')}</span>
+                            <span class="font-bold">${pointsText}</span>
+                          </div>
+                        `;
+                      }).join("")}
+                    </div>
+                  </div>
+                </div>
+              `;
+            }
+
+            const dimsHtml = result.engineeringDimensions.map(dim => {
+              if (!dim.signals || dim.signals.length === 0) return '';
+              
+              // Calculate sums to show math reproducibility
+              let totalApplicableWeight = 0;
+              let earnedApplicableWeight = 0;
+              dim.signals.forEach(s => {
+                if (s.applicability !== 'NOT_APPLICABLE') {
+                  totalApplicableWeight += s.weight;
+                  if (s.status === 'PRESENT') {
+                    earnedApplicableWeight += s.weight;
+                  }
+                }
+              });
+              const calculatedScore = totalApplicableWeight > 0 ? Math.round((earnedApplicableWeight / totalApplicableWeight) * 100) : 100;
+
+              return `
+                <div class="space-y-4">
+                  <h3 class="text-xs font-mono font-bold uppercase tracking-wider text-violet flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-violet"></span>
+                    ${dim.name} Dimension (Calculated: ${dim.score}/100)
+                  </h3>
+                  
+                  <div class="p-4 rounded-xl border border-border bg-bg/50">
+                    <p class="text-xs font-mono text-violet font-bold mb-1.5 uppercase">Math Calculation Breakdown:</p>
+                    <div class="text-xs font-mono text-gray-300 space-y-1">
+                      <div>Applicable Signals Sum of Weights (Denominator): <span class="text-white font-bold">${totalApplicableWeight}</span></div>
+                      <div>Detected (PRESENT) Signals Sum of Weights (Numerator): <span class="text-white font-bold">${earnedApplicableWeight}</span></div>
+                      <div class="pt-2 border-t border-border/40 mt-1.5">
+                        Formula: <span class="text-violet">Math.round((${earnedApplicableWeight} / ${totalApplicableWeight}) * 100)</span> = <span class="text-lime font-bold">${calculatedScore} / 100</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    ${dim.signals.map(s => {
+                      const isNA = s.applicability === 'NOT_APPLICABLE';
+                      const isPresent = s.status === 'PRESENT';
+                      const colorClass = isNA ? 'text-gray-500' : (isPresent ? 'text-lime' : 'text-coral');
+                      const bgClass = isNA ? 'bg-gray-500/10' : (isPresent ? 'bg-lime/10' : 'bg-coral/10');
+                      const badgeText = isNA ? 'N/A' : (isPresent ? 'PRESENT' : 'ABSENT');
+                      const borderClass = isNA ? 'border-border' : (isPresent ? 'border-lime/10' : 'border-coral/10');
+                      const weightPoints = isNA ? '0' : (isPresent ? `+${s.weight}` : `0`);
+                      
+                      return `
+                        <div class="p-3.5 rounded-xl border ${borderClass} bg-surface-elevated/40 flex flex-col justify-between">
+                          <div>
+                            <div class="flex items-center justify-between gap-2 mb-2">
+                              <span class="text-xs font-semibold text-white truncate max-w-[200px]">${s.label}</span>
+                              <span class="text-[9px] font-mono font-bold px-2 py-0.5 rounded ${colorClass} ${bgClass}">
+                                ${badgeText}
+                              </span>
+                            </div>
+                            <p class="text-[11px] text-gray-400 leading-relaxed mb-2">${s.reason}</p>
+                            <p class="text-[10px] font-mono text-gray-500 mb-2">
+                              Weight: <span class="text-white">${s.weight} pts</span> &middot; Contribution: <span class="${isPresent ? 'text-lime' : 'text-gray-400'} font-bold">${weightPoints} pts</span>
+                            </p>
+                          </div>
+                          ${s.evidence && s.evidence.length > 0 ? `
+                            <div class="mt-2 text-[10px] font-mono text-gray-500 space-y-0.5 bg-bg/40 p-2 rounded-lg border border-border/20">
+                              <span class="text-[9px] font-bold text-gray-600 block mb-1 uppercase tracking-wide">Evidence:</span>
+                              ${s.evidence.map(e => `<div class="truncate text-gray-400 pl-1.5 border-l border-lime/30">${e}</div>`).join("")}
+                            </div>
+                          ` : ''}
+                        </div>
+                      `;
+                    }).join("")}
+                  </div>
+                </div>
+              `;
+            }).join("");
+
+            diagBody.innerHTML = rrHtml + dimsHtml;
+          }
+
+          // Limitations
+          document.getElementById("limitations-list").innerHTML = [...new Set(result.limitations)].map(lim => `<li>${lim}</li>`).join("");
+
+          // Footer info
+          document.getElementById("analysis-metadata-footer").innerText = `DETERMINISTIC ANALYSIS · Scoring model v${result.scoringVersion || "3.1"} · Completed in ${result.analysisTimeMs || 0}ms · ${result.aiUnavailable ? "AI insights unavailable — deterministic analysis is still available" : "AI-assisted insights enabled"}`;
+
+          lucide.createIcons();
+        }
+
+        // Fetch Analysis Result in parallel
+        fetch('/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ owner: parsed.owner, name: parsed.name })
+        })
+        .then(async res => {
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.message || errData.detail || "Analysis failed");
+          }
+          return res.json();
+        })
+        .then(data => {
+          apiData = data.result;
+
+          // Save to localstorage history
+          const history = JSON.parse(localStorage.getItem("analysis_history") || "[]");
+          const existingIdx = history.findIndex(h => h.owner === parsed.owner && h.name === parsed.name);
+          if (existingIdx !== -1) history.splice(existingIdx, 1);
+          history.unshift({
+            owner: parsed.owner,
+            name: parsed.name,
+            score: apiData.resumeReadinessScore,
+            time: Date.now()
+          });
+          localStorage.setItem("analysis_history", JSON.stringify(history.slice(0, 10))); // Cap at 10
+
+          // Check if pipeline has already finished naturally, if so, trigger transition
+          if (pipelineFinished) {
+            transitionToResults(apiData);
+          }
+        })
+        .catch(err => {
+          apiError = err.message || "An unexpected error occurred.";
+          clearTimeout(pipelineTimer);
+          updatePipelineUI(); // Show red error icon on the current step
+
+          setTimeout(() => {
+            analyzingPhase.classList.add("hidden");
+            errorPhase.classList.remove("hidden");
+            document.getElementById("error-phase-msg").innerText = apiError;
+            lucide.createIcons();
+          }, 1000);
+        });
+      }
+
+      function parseGitHubUrlHelper(input) {
+        const trimmed = input.trim();
+        const urlRegex = /^(?:https?:\/\/)?(?:www\.)?github\.com\/([a-zA-Z0-9._-]+)\/([a-zA-Z0-9._-]+)(?:\/.*)?$/;
+        const shortRegex = /^([a-zA-Z0-9._-]+)\/([a-zA-Z0-9._-]+)$/;
+        const match = trimmed.match(urlRegex) || trimmed.match(shortRegex);
+        if (match) {
+          return { owner: match[1], name: match[2].replace(/\.git$/, "") };
+        }
+        return null;
+      }
+    });
+  </script>
+</body>
+</html>
