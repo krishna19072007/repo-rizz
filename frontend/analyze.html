@@ -274,58 +274,7 @@
 
   </main>
 
-  <!-- Footer -->
-  <footer class="border-t border-border mt-auto py-8 bg-bg">
-    <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
-      <div class="flex flex-col items-center md:items-start text-center md:text-left">
-        <span class="text-lg font-bold tracking-tight text-white">
-          REPO <span class="text-lime">RIZZ</span>
-        </span>
-        <p class="text-xs mt-1 text-gray-500">
-          Advanced GitHub repository analysis for developers.
-        </p>
-      </div>
-
-      <div class="flex items-center gap-6">
-        <a href="/about" class="text-sm text-gray-400 hover:text-lime transition-colors">About</a>
-        <button id="privacy-btn" class="text-sm text-gray-400 cursor-not-allowed transition-opacity hover:opacity-70">
-          Privacy Policy
-        </button>
-        <a href="https://github.com/krishna19072007/repo-rizz" target="_blank" rel="noopener noreferrer" class="text-sm text-gray-400 hover:text-lime transition-colors">GitHub</a>
-      </div>
-    </div>
-  </footer>
-
-  <!-- Brand Modal -->
-  <div id="brand-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm modal-close"></div>
-    <div class="relative w-full max-w-md rounded-2xl overflow-hidden border border-border bg-surface shadow-2xl p-10 flex flex-col items-center text-center z-10">
-      <button class="absolute top-4 right-4 p-2 rounded-full text-gray-400 hover:text-white hover:bg-surface-elevated transition-colors modal-close">
-        <i data-lucide="x" class="w-5 h-5"></i>
-      </button>
-
-      <div class="relative w-32 h-32 mb-6">
-        <img src="/static/logo.png" alt="Repo Rizz Logo" class="object-contain w-full h-full">
-      </div>
-      
-      <h2 class="text-3xl font-bold tracking-tight mb-2 text-white">
-        REPO <span class="text-lime">RIZZ</span>
-      </h2>
-      
-      <p class="text-sm text-gray-400 mb-6">
-        AI-powered GitHub repository analysis and scoring engine.
-      </p>
-      
-      <div class="w-full border-t border-border pt-6 flex justify-center space-x-6">
-        <a href="https://github.com/krishna19072007/repo-rizz" target="_blank" rel="noopener noreferrer" class="text-xs font-mono tracking-wider text-gray-400 hover:text-lime transition-colors">
-          SOURCE CODE
-        </a>
-        <a href="/about" class="text-xs font-mono tracking-wider text-gray-400 hover:text-lime transition-colors">
-          ABOUT
-        </a>
-      </div>
-    </div>
-  </div>
+  <!-- Footer & Brand Modal injected by app.js -->
 
   <script src="/static/app.js"></script>
   <script>
@@ -1065,17 +1014,6 @@
             lucide.createIcons();
           }, 1000);
         });
-      }
-
-      function parseGitHubUrlHelper(input) {
-        const trimmed = input.trim();
-        const urlRegex = /^(?:https?:\/\/)?(?:www\.)?github\.com\/([a-zA-Z0-9._-]+)\/([a-zA-Z0-9._-]+)(?:\/.*)?$/;
-        const shortRegex = /^([a-zA-Z0-9._-]+)\/([a-zA-Z0-9._-]+)$/;
-        const match = trimmed.match(urlRegex) || trimmed.match(shortRegex);
-        if (match) {
-          return { owner: match[1], name: match[2].replace(/\.git$/, "") };
-        }
-        return null;
       }
     });
   </script>
