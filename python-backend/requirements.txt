@@ -4,3 +4,7 @@ requests>=2.32.3
 python-dotenv>=1.0.1
 google-generativeai>=0.8.0
 httpx>=0.27.0
+python-multipart>=0.0.9
+pytest>=8.0.0
+# Optional: Supabase persistence (SQLite is the zero-config default)
+# supabase>=2.4.0

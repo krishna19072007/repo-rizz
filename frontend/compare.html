@@ -52,6 +52,7 @@
         <a href="/" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-surface">Home</a>
         <a href="/analyze" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-surface">Repo's Rizz</a>
         <a href="/compare" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-lime bg-surface-elevated">Repo Battle</a>
+        <a href="/contributors" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-surface">Contributors</a>
         <a href="/history" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-surface">History</a>
       </div>
 
@@ -173,6 +174,13 @@
 
   <script src="/static/app.js"></script>
   <script>
+    // Escape values rendered into innerHTML (repo metadata comes from GitHub)
+    function escHtml(value) {
+      return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
     function getResumeReadinessLabel(status, score) {
       const s = String(status).toLowerCase().replace(/_/g, "");
       if (s === "exceptional" || s === "ready" || score >= 80) return "READY";
@@ -224,7 +232,7 @@
             <h3 class="text-lg font-bold text-white">
               ${result.repository.owner}/<span class="${side === 'left' ? 'text-lime' : 'text-violet'}">${result.repository.name}</span>
             </h3>
-            ${result.repository.description ? `<p class="text-xs mt-1 text-gray-400">${result.repository.description}</p>` : ''}
+            ${result.repository.description ? `<p class="text-xs mt-1 text-gray-400">${escHtml(result.repository.description)}</p>` : ''}
           </div>
 
           <div class="flex items-center gap-4">

@@ -1,25 +1,50 @@
-from fastapi import FastAPI, HTTPException
+"""
+Repo Rizz FastAPI backend — composition root.
+
+This module owns the application shell:
+- the FastAPI app and its middleware (CORS, security headers, body cap)
+- the pre-existing /analyze engine API (GitHub + Gemini scoring)
+- mounting the contributor + admin routers and the static frontend pages
+
+Feature logic lives in dedicated modules:
+- admin_auth        -> sessions, code check, CSRF, rate limit, login/logout/me
+- contributors_api  -> contributor validation + routes (mounted below)
+- contributors_store-> persistence (SQLite default / optional Supabase)
+- uploads           -> secure avatar file handling
+"""
+
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from github import (
-    fetch_analysis_input, 
-    GitHubRateLimitError, 
-    GitHubNotFoundError, 
-    GitHubServiceError, 
+    fetch_analysis_input,
+    GitHubRateLimitError,
+    GitHubNotFoundError,
+    GitHubServiceError,
     GitHubNetworkError
 )
 from engine import run_analysis
 from dotenv import load_dotenv
 import json
 import os
+import re
+import logging
+
+from admin_auth import auth_router, cookie_is_secure
+from contributors_api import router as contributors_router
 
 load_dotenv(); load_dotenv("../.env.local")
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
+logger = logging.getLogger("repo_rizz.api")
+
 app = FastAPI()
 
-import re
 from starlette.middleware.base import BaseHTTPMiddleware
 
 OWNER_NAME_RE = re.compile(r"^[a-zA-Z0-9._-]+$")
@@ -42,7 +67,7 @@ app.add_middleware(
         "http://127.0.0.1:8001"
     ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -62,9 +87,32 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "font-src 'self' https://fonts.gstatic.com; "
             "frame-ancestors 'none';"
         )
+        # HSTS only when cookies are Secure (HTTPS deployments)
+        if cookie_is_secure():
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         return response
 
 app.add_middleware(SecurityHeadersMiddleware)
+
+# Reject oversized request bodies early (defense in depth; the image
+# upload endpoint additionally enforces its own 2 MB content cap).
+class MaxBodySizeMiddleware(BaseHTTPMiddleware):
+    MAX_BYTES = 5 * 1024 * 1024
+
+    async def dispatch(self, request, call_next):
+        length = request.headers.get("content-length")
+        if length and length.isdigit() and int(length) > self.MAX_BYTES:
+            return JSONResponse(
+                status_code=413,
+                content={"detail": "Request body too large."},
+            )
+        return await call_next(request)
+
+app.add_middleware(MaxBodySizeMiddleware)
+
+# Feature routers (see module docstrings for what each owns)
+app.include_router(auth_router)
+app.include_router(contributors_router)
 
 class AnalyzeRequest(BaseModel):
     owner: str
@@ -95,7 +143,7 @@ async def analyze_repo(req: AnalyzeRequest):
         except Exception as e:
             print(f"Failed to load demo data: {e}")
             raise HTTPException(status_code=500, detail="Demo data unavailable")
-            
+
     try:
         input_data = await fetch_analysis_input(req.owner, req.name)
         result = await run_analysis(input_data)
@@ -150,6 +198,7 @@ async def diagnostic_analyze(owner: str, name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail="An unexpected error occurred during diagnostic analysis.")
 
+
 # Mount static files and page routes
 app.mount("/static", StaticFiles(directory="../frontend"), name="static")
 
@@ -172,3 +221,11 @@ async def serve_compare():
 @app.get("/history")
 async def serve_history():
     return FileResponse("../frontend/history.html")
+
+@app.get("/privacy")
+async def serve_privacy():
+    return FileResponse("../frontend/privacy.html")
+
+@app.get("/contributors")
+async def serve_contributors():
+    return FileResponse("../frontend/contributors.html")

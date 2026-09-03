@@ -31,9 +31,9 @@ cd python-backend
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
-python -m uvicorn main:app --reload --port 8000
+python -m uvicorn main:app --reload --port 8000 --no-proxy-headers
 ```
-*The backend will be running at http://localhost:8000*
+*The backend will be running at http://localhost:8000* (`--no-proxy-headers` stops uvicorn from trusting spoofable `X-Forwarded-For` IPs, keeping the admin login rate limiter accurate; behind a real reverse proxy, drop the flag and set `TRUST_FORWARDED_FOR=true` in the backend `.env` instead)
 
 ### 2. Start the Next.js Frontend
 Open a second terminal in the project root:
@@ -51,11 +51,18 @@ npm run dev
 | `NEXT_PUBLIC_SUPABASE_URL` | No | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | No | Supabase anonymous key |
 
-### Backend (`python-backend/.env`)
+### Backend (`python-backend/.env` — copy from `python-backend/.env.template`)
 | Variable | Required | Description |
 |----------|----------|-------------|
+| `RIZZ_MASTER_CODE` | For admin panel | Secret code to access the Rizz Master admin panel |
 | `GITHUB_TOKEN` | No | GitHub API token for higher rate limits |
 | `GEMINI_API_KEY` | No | Google Gemini API key for AI insights |
+| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | No | Optional Supabase persistence (SQLite is the default) |
+| `COOKIE_SECURE` | No | Set `true` when serving over HTTPS |
+
+### Features
+
+- **Contributors** — a public team directory at `/contributors` with a secure Rizz Master admin panel (add / edit / delete / reorder / custom image uploads).
 
 ## Features
 
