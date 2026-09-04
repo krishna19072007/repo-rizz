@@ -19,7 +19,7 @@ URL = "https://project.supabase.co"
 ANON = "pk_test_anon_key_123"
 SERVICE_SECRET = "svc_role_secret_never_served"
 
-PAGES = ["/", "/about", "/analyze", "/compare", "/history", "/contributors", "/contributors/admin"]
+PAGES = ["/", "/about", "/analyze", "/compare", "/history", "/contributors", "/contributors/admin", "/signup"]
 
 
 @pytest.fixture(autouse=True)
@@ -56,14 +56,28 @@ def test_login_page_served_with_ui_and_no_store(client):
     html = r.text
     assert "CONTINUE WITH GITHUB" in html
     assert "github-btn" in html
-    assert "email-form" in html
-    assert "SIGN IN" in html and "CREATE ACCOUNT" in html
+    assert "login-form" in html
+    assert "SIGN IN" in html
+    assert 'href="/signup' in html  # cross-link to account creation
     assert "/static/auth.js" in html
     assert "supabase-js@2.115.0" in html  # the client library is pinned
     assert "logout-btn" in html
     # Admin auth must stay completely separate from this page.
     for forbidden in ["rizz_master_session", "RIZZ_MASTER_CODE", "service_role", "service-role"]:
         assert forbidden not in html, f"login page must not mention {forbidden}"
+
+
+def test_signup_page_served_with_ui_and_no_store(client):
+    r = client.get("/signup")
+    assert r.status_code == 200
+    assert r.headers.get("cache-control") == "no-store"
+    html = r.text
+    assert "CREATE ACCOUNT" in html
+    assert "signup-form" in html
+    assert "confirm-input" in html          # confirm-password field
+    assert "CONTINUE WITH GITHUB" in html
+    assert "Already have an account" in html
+    assert 'href="/login' in html           # cross-link to sign-in
 
 
 def test_login_page_never_embeds_the_anon_key(client, monkeypatch):
@@ -98,6 +112,10 @@ def test_auth_js_is_served_and_safe(client):
     assert "createClient" in js
     assert "signInWithOAuth" in js
     assert 'provider: "github"' in js
+    assert "signOut" in js
+    assert "authHeaders" in js          # server calls carry the real token
+    assert "gate" in js                 # analysis/history gate helper
+    assert "LOGIN TO" in js             # prompt copy
     assert "service_role" not in js and "SERVICE_ROLE" not in js
 
 
@@ -142,3 +160,21 @@ def test_csp_omits_supabase_when_not_configured(client):
     csp = client.get("/login").headers.get("content-security-policy", "")
     assert URL not in csp
     assert "connect-src 'self' https://api.github.com;" in csp
+
+
+# ---------------------------------------------------------------------------
+# Protected history API (server-side session verification + per-user rows)
+# ---------------------------------------------------------------------------
+
+def test_history_requires_bearer_token(client):
+    # No session -> 401 before any network/store call happens.
+    assert client.get("/api/history").status_code == 401
+    assert client.post("/api/history", json={"owner": "o", "name": "n", "score": 50}).status_code == 401
+    assert client.delete("/api/history/abc").status_code == 401
+
+
+def test_history_rejects_malformed_bearer(client, monkeypatch):
+    # A present-but-malformed header must not reach the store either.
+    monkeypatch.setattr("user_history._verify_user", lambda token: (_ for _ in ()).throw(Exception("must not be called")))
+    r = client.get("/api/history", headers={"Authorization": "Basic abc"})
+    assert r.status_code == 401

@@ -176,6 +176,24 @@
     <!-- History Container -->
     <div id="history-container" class="w-full space-y-4">
 
+      <!-- Sign-in gate (logged out) -->
+      <div id="history-gate" class="hidden text-center py-24">
+        <div class="w-16 h-16 rounded-2xl bg-surface border border-border flex items-center justify-center mx-auto mb-6">
+          <i data-lucide="lock" class="w-8 h-8 text-lime"></i>
+        </div>
+        <h2 class="text-2xl font-bold mb-2 text-white">Sign in to view your analysis history</h2>
+        <p class="text-sm text-gray-400 mb-8 max-w-sm mx-auto">History is tied to your account — sign in to see your past analyses.</p>
+        <div class="flex items-center justify-center gap-3">
+          <a href="/login?next=/history" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all hover:scale-[1.02] bg-lime text-black">SIGN IN</a>
+          <a href="/signup?next=/history" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-border font-semibold text-sm text-gray-300 hover:text-white hover:border-lime/40 transition-all">CREATE ACCOUNT</a>
+        </div>
+      </div>
+
+      <!-- History unavailable (server error, e.g. migration not run) -->
+      <div id="history-error" class="hidden text-center py-20">
+        <p class="text-sm font-mono text-coral max-w-md mx-auto leading-relaxed" id="history-error-msg"></p>
+      </div>
+
       <!-- Empty State -->
       <div id="empty-state" class="text-center py-24">
         <div class="w-16 h-16 rounded-2xl bg-surface border border-border flex items-center justify-center mx-auto mb-6">
@@ -240,6 +258,7 @@
       let allHistory = [];
       let filteredHistory = [];
       let pendingDeleteId = null;
+      let serverMode = false; // true -> rows live in the Supabase-backed API
 
       const searchInput   = document.getElementById("search-input");
       const sortSelect    = document.getElementById("sort-select");
@@ -262,6 +281,29 @@
 
       function saveData() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(allHistory));
+      }
+
+      function persist() {
+        // In server mode the authoritative copy is the API; the local
+        // mirror below is only for the legacy anonymous path.
+        if (!serverMode) saveData();
+      }
+
+      function serverRowToItem(row) {
+        const created = row.created_at ? Date.parse(row.created_at) : NaN;
+        return {
+          id: row.id,
+          owner: row.owner,
+          name: row.name,
+          fullName: `${row.owner}/${row.name}`,
+          score: row.score || 0,
+          status: row.status || "",
+          summary: row.summary || "",
+          dimensions: row.dimensions || {},
+          rizzVerdict: row.rizz_verdict || "",
+          criticalCount: row.critical_count || 0,
+          time: Number.isNaN(created) ? Date.now() : created,
+        };
       }
 
       function timeAgo(ts) {
@@ -503,10 +545,17 @@
         confirmOverlay.classList.remove("show");
         pendingDeleteId = null;
       });
-      confirmOk.addEventListener("click", () => {
-        if (pendingDeleteId !== null) {
+      confirmOk.addEventListener("click", async () => {
+        if (pendingDeleteId !== null && pendingDeleteId !== "__ALL__") {
+          const removed = allHistory.find(h => (h.id || h.time) == pendingDeleteId);
           allHistory = allHistory.filter(h => (h.id || h.time) != pendingDeleteId);
-          saveData();
+          if (serverMode && removed && removed.id) {
+            const headers = await RR_AUTH.authHeaders();
+            if (headers) {
+              fetch(`/api/history/${encodeURIComponent(removed.id)}`, { method: "DELETE", headers }).catch(() => {});
+            }
+          }
+          persist();
           render();
         }
         confirmOverlay.classList.remove("show");
@@ -517,15 +566,21 @@
       clearAllBtn.addEventListener("click", () => {
         pendingDeleteId = "__ALL__";
         document.getElementById("confirm-title").textContent = "Clear all history?";
-        document.getElementById("confirm-desc").textContent = "This will permanently remove all analyses from your browser.";
+        document.getElementById("confirm-desc").textContent = "This will permanently remove all your analyses.";
         confirmOverlay.classList.add("show");
       });
-      // Override confirm OK for clear all
-      const origConfirmOk = confirmOk.onclick;
-      confirmOk.addEventListener("click", () => {
+      // Confirm OK for clear all (runs after the single-delete handler above)
+      confirmOk.addEventListener("click", async () => {
         if (pendingDeleteId === "__ALL__") {
+          if (serverMode) {
+            const headers = await RR_AUTH.authHeaders();
+            if (headers) {
+              const ids = allHistory.map(h => h.id).filter(Boolean);
+              await Promise.all(ids.map(id => fetch(`/api/history/${encodeURIComponent(id)}`, { method: "DELETE", headers }).catch(() => {})));
+            }
+          }
           allHistory = [];
-          saveData();
+          persist();
           render();
           confirmOverlay.classList.remove("show");
           pendingDeleteId = null;
@@ -544,9 +599,69 @@
         }
       });
 
-      // Init
-      loadData();
-      render();
+      // ---- Init: history is account-tied --------------------------
+      // Logged out  -> sign-in gate (server history requires an account).
+      // Logged in   -> rows come from /api/history (own rows only).
+      // Server has no analyses table -> clean error, no crash.
+      // `currentAuthed` records which session state the view on screen was
+      // rendered for; onAuthChange reloads when it flips (e.g. the user logs
+      // out from the navbar chip while staying on this page).
+      let currentAuthed = null;
+      async function initHistory() {
+        const gateEl = document.getElementById("history-gate");
+        const errEl = document.getElementById("history-error");
+        const user = await RR_AUTH.getUser().catch(() => null);
+        if (!user) {
+          // Accounts not configured -> fall back to the legacy local history.
+          const cfg = await RR_AUTH.config().catch(() => ({ enabled: false }));
+          if (!cfg.enabled) { currentAuthed = false; loadData(); render(); return; }
+          currentAuthed = false;
+          controlsBar.classList.add("hidden");
+          historyList.classList.add("hidden");
+          emptyState.classList.add("hidden");
+          noResults.classList.add("hidden");
+          statAvg.classList.add("hidden");
+          statRange.classList.add("hidden");
+          if (gateEl) gateEl.classList.remove("hidden");
+          return;
+        }
+        const headers = await RR_AUTH.authHeaders();
+        if (!headers) { currentAuthed = true; loadData(); render(); return; }
+        try {
+          const res = await fetch("/api/history", { headers });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || "History is unavailable right now.");
+          }
+          const data = await res.json();
+          allHistory = (data.history || []).map(serverRowToItem);
+          serverMode = true;
+        } catch (e) {
+          currentAuthed = true;
+          controlsBar.classList.add("hidden");
+          historyList.classList.add("hidden");
+          emptyState.classList.add("hidden");
+          noResults.classList.add("hidden");
+          if (errEl) {
+            errEl.classList.remove("hidden");
+            document.getElementById("history-error-msg").textContent = e.message;
+          }
+          return;
+        }
+        currentAuthed = true;
+        if (errEl) errEl.classList.add("hidden");
+        render();
+      }
+      initHistory();
+      // Reload only when the session state the page was rendered for flips
+      // while the user stays here (logout/sign-in from the navbar chip). The
+      // initial callback fires before initHistory finishes (currentAuthed is
+      // null) and TOKEN_REFRESHED events keep the same state, so neither
+      // triggers a reload.
+      RR_AUTH.onAuthChange((user) => {
+        if (currentAuthed !== null && !!user !== currentAuthed) window.location.reload();
+      });
+      if (typeof lucide !== "undefined") lucide.createIcons();
     });
   </script>
 </body>

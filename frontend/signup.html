@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In | Repo Rizz</title>
+  <title>Create Account | Repo Rizz</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script>
@@ -100,11 +100,11 @@
           User Portal
         </div>
         <h1 class="text-4xl font-extrabold tracking-tight leading-none text-white">
-          SIGN <span class="text-lime">IN</span>
+          CREATE <span class="text-lime">ACCOUNT</span>
         </h1>
         <p class="text-gray-400 text-sm max-w-sm mx-auto leading-relaxed">
-          Sign in to analyze repositories and keep your analysis history.
-          The Rizz Master admin panel is a separate, secured area.
+          Create a free account to analyze repositories and keep your
+          analysis history. The Rizz Master admin panel is separate.
         </p>
       </header>
 
@@ -114,12 +114,12 @@
         <p class="mt-3 text-xs font-mono text-gray-500">LOADING AUTH...</p>
       </div>
 
-      <!-- Auth unavailable: not configured, or the client library failed to load -->
+      <!-- Auth unavailable -->
       <div id="view-unavailable" class="hidden p-6 rounded-2xl border border-dashed border-coral/40 bg-surface/60 text-center space-y-3">
         <p id="unavailable-title" class="text-sm font-mono text-coral font-bold">AUTH NOT CONFIGURED</p>
         <p class="text-xs text-gray-400 leading-relaxed">
-          Supabase login is not enabled on this server. The operator needs to
-          set <code class="text-lime">NEXT_PUBLIC_SUPABASE_URL</code> and
+          Supabase sign-up is not enabled on this server. The operator needs
+          to set <code class="text-lime">NEXT_PUBLIC_SUPABASE_URL</code> and
           <code class="text-lime">NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code>
           in the root <code class="text-lime">.env.local</code> and restart.
         </p>
@@ -129,32 +129,12 @@
         </p>
       </div>
 
-      <!-- Signed-in account panel -->
-      <div id="view-account" class="hidden p-8 rounded-2xl border border-border bg-surface shadow-2xl space-y-6 text-center">
-        <div id="account-avatar" class="mx-auto w-20 h-20 rounded-full border border-border overflow-hidden flex items-center justify-center bg-surface-elevated"></div>
-        <div>
-          <h2 id="account-name" class="text-xl font-bold text-white"></h2>
-          <p id="account-handle" class="text-xs font-mono text-gray-500 mt-1"></p>
-          <span id="account-provider" class="inline-block mt-3 text-[9px] font-mono font-bold text-lime bg-lime/10 border border-lime/20 px-2 py-1 rounded uppercase tracking-wider"></span>
-        </div>
-        <div class="border-t border-border pt-5 space-y-3">
-          <button id="logout-btn" class="w-full px-4 py-3 rounded-xl border border-coral/40 text-coral text-xs font-mono font-bold tracking-widest hover:bg-coral/10 transition-colors">
-            LOG OUT
-          </button>
-          <a href="/" class="block w-full px-4 py-3 rounded-xl border border-border text-gray-300 text-xs font-mono font-bold tracking-widest hover:border-lime/40 hover:text-white transition-colors">
-            BACK TO HOME
-          </a>
-          <p class="text-[10px] text-gray-600 leading-relaxed">
-            Session persists across refreshes — log out removes it from this browser.
-          </p>
-        </div>
-      </div>
-
-      <!-- Sign-in form -->
+      <!-- Signup form -->
       <div id="view-forms" class="hidden p-8 rounded-2xl border border-border bg-surface shadow-2xl">
         <p id="auth-error" class="hidden mb-4 px-4 py-3 rounded-lg border border-coral/30 bg-coral/5 text-coral text-xs font-mono leading-relaxed"></p>
+        <p id="auth-success" class="hidden mb-4 px-4 py-3 rounded-lg border border-lime/30 bg-lime/5 text-lime text-xs font-mono leading-relaxed"></p>
 
-        <form id="login-form" class="space-y-4">
+        <form id="signup-form" class="space-y-4">
           <div>
             <label for="email-input" class="block text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1.5">Email</label>
             <input id="email-input" type="email" required placeholder="you@example.com" autocomplete="email"
@@ -162,12 +142,17 @@
           </div>
           <div>
             <label for="password-input" class="block text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1.5">Password</label>
-            <input id="password-input" type="password" required placeholder="••••••••" autocomplete="current-password"
+            <input id="password-input" type="password" required minlength="6" placeholder="At least 6 characters" autocomplete="new-password"
               class="w-full px-4 py-3 rounded-xl border border-border bg-bg text-sm text-white placeholder:text-gray-600 outline-none focus:border-lime/50 transition-colors">
           </div>
-          <button id="login-submit" type="submit"
+          <div>
+            <label for="confirm-input" class="block text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1.5">Confirm Password</label>
+            <input id="confirm-input" type="password" required placeholder="Repeat your password" autocomplete="new-password"
+              class="w-full px-4 py-3 rounded-xl border border-border bg-bg text-sm text-white placeholder:text-gray-600 outline-none focus:border-lime/50 transition-colors">
+          </div>
+          <button id="signup-submit" type="submit"
             class="w-full px-4 py-3 rounded-xl bg-lime text-black text-xs font-mono font-bold tracking-widest hover:scale-[1.01] active:scale-[0.99] transition-transform">
-            SIGN IN
+            CREATE ACCOUNT
           </button>
         </form>
 
@@ -186,8 +171,8 @@
         </button>
 
         <p class="text-center text-xs text-gray-500 mt-6">
-          Don't have an account?
-          <a id="signup-link" href="/signup" class="text-lime font-bold hover:underline ml-1">SIGN UP</a>
+          Already have an account?
+          <a id="login-link" href="/login" class="text-lime font-bold hover:underline ml-1">SIGN IN</a>
         </p>
       </div>
     </div>
@@ -200,88 +185,62 @@
   <script src="/static/app.js"></script>
   <script>
     // ============================================================
-    // /login — normal user sign-in (Supabase). The Rizz Master
-    // admin area is separate: /contributors/admin with its own
-    // server-side session; nothing here grants or touches that.
+    // /signup — normal user account creation (Supabase).
     // ============================================================
 
     const $ = (id) => document.getElementById(id);
-    const views = { loading: $("view-loading"), unavailable: $("view-unavailable"), account: $("view-account"), forms: $("view-forms") };
-    const NEXT = RR_AUTH.safeNext(); // where to continue after sign-in
+    const views = { loading: $("view-loading"), unavailable: $("view-unavailable"), forms: $("view-forms") };
+    const NEXT = RR_AUTH.safeNext();
 
     function showView(name) {
       Object.keys(views).forEach(k => views[k].classList.toggle("hidden", k !== name));
     }
 
-    function showError(text) {
-      const el = $("auth-error");
+    function showMessage(elId, text) {
+      const el = $(elId);
       if (!text) { el.classList.add("hidden"); el.textContent = ""; return; }
       el.textContent = text;
       el.classList.remove("hidden");
     }
 
     function setBusy(busy) {
-      $("login-submit").disabled = busy;
+      $("signup-submit").disabled = busy;
       $("github-btn").disabled = busy;
-      $("login-submit").textContent = busy ? "SIGNING IN..." : "SIGN IN";
+      $("signup-submit").textContent = busy ? "CREATING..." : "CREATE ACCOUNT";
       $("github-btn").classList.toggle("opacity-50", busy);
     }
 
-    // Carry ?next= through to the signup link too.
     const nextSuffix = NEXT !== "/" ? `?next=${encodeURIComponent(NEXT)}` : "";
-    $("signup-link").href = "/signup" + nextSuffix;
-
-    // ---- account panel -------------------------------------------
-    function renderAccount(user) {
-      if (!user) {
-        showError("");
-        showView("forms");
-        return;
-      }
-      // Fresh sign-in with a pending destination (e.g. the repo the user
-      // wanted to analyze): continue there automatically.
-      if (NEXT !== "/") { window.location.assign(NEXT); return; }
-
-      const meta = user.user_metadata || {};
-      const name = meta.name || meta.user_name || (user.email || "").split("@")[0] || "User";
-      const handle = meta.user_name ? "@" + meta.user_name : user.email || "";
-      const provider = (user.app_metadata && user.app_metadata.provider) || "email";
-
-      $("account-name").textContent = name;
-      $("account-handle").textContent = handle;
-      $("account-provider").textContent = provider === "github" ? "Connected via GitHub" : "Email account";
-
-      const avatar = $("account-avatar");
-      avatar.innerHTML = "";
-      if (meta.avatar_url) {
-        const img = document.createElement("img");
-        img.src = meta.avatar_url;
-        img.alt = name;
-        img.className = "w-full h-full object-cover";
-        img.addEventListener("error", () => { avatar.innerHTML = ""; avatar.appendChild(RR_AUTH.initialBadge(name, "w-full h-full text-2xl")); }, { once: true });
-        avatar.appendChild(img);
-      } else {
-        avatar.appendChild(RR_AUTH.initialBadge(name, "w-full h-full text-2xl"));
-      }
-      showView("account");
-    }
+    $("login-link").href = "/login" + nextSuffix;
 
     // ---- actions -------------------------------------------------
-    $("login-form").addEventListener("submit", async (e) => {
+    $("signup-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const email = $("email-input").value.trim();
       const password = $("password-input").value;
-      if (!email || !password) { showError("Enter your email and password."); return; }
+      const confirm = $("confirm-input").value;
+
+      if (!email) { showMessage("auth-error", "Email is required."); return; }
+      if (!password) { showMessage("auth-error", "Password is required."); return; }
+      if (!confirm) { showMessage("auth-error", "Please confirm your password."); return; }
+      if (password !== confirm) { showMessage("auth-error", "Passwords do not match."); return; }
+
       setBusy(true);
       try {
-        const { error } = await RR_AUTH.signInWithEmail(email, password);
+        const { data, error } = await RR_AUTH.signUpWithEmail(email, password);
         if (error) {
-          const m = error.message || "Sign-in failed.";
-          showError(/not confirmed/i.test(m) ? "Email not confirmed yet — check your inbox for the confirmation link." : m);
+          showMessage("auth-error", error.message || "Sign-up failed.");
+        } else if (!data.session) {
+          // Email confirmation is required by the project.
+          showMessage("auth-success", "Confirmation email sent — check your inbox, then sign in.");
+          showMessage("auth-error");
+          $("password-input").value = "";
+          $("confirm-input").value = "";
         }
-        // Success -> the auth-state listener renders the account / redirects.
+        // With a session (no email confirmation) the auth-state listener
+        // redirects to NEXT below.
       } catch (err) {
-        showError("Unexpected error — please try again.");
+        showMessage("auth-error", "Unexpected error — please try again.");
       } finally {
         setBusy(false);
       }
@@ -291,27 +250,25 @@
       setBusy(true);
       const { error } = await RR_AUTH.signInWithGitHub();
       if (error) {
-        showError(error.message || "GitHub sign-in could not be started.");
+        showMessage("auth-error", error.message || "GitHub sign-in could not be started.");
         setBusy(false);
         return;
       }
-      // On success the browser navigates to GitHub. If that navigation is
-      // blocked (popup blockers, embedded webviews) recover instead of
-      // leaving the button stuck disabled.
       setTimeout(() => {
-        if (window.location.pathname === "/login") {
+        if (window.location.pathname === "/signup") {
           setBusy(false);
-          showError("GitHub didn't open — redirects or pop-ups may be blocked here. Try again in a regular browser tab.");
+          showMessage("auth-error", "GitHub didn't open — redirects or pop-ups may be blocked here. Try again in a regular browser tab.");
         }
       }, 4000);
     });
 
-    $("logout-btn").addEventListener("click", async () => {
-      $("logout-btn").disabled = true;
-      await RR_AUTH.signOut();
-      $("logout-btn").disabled = false;
-      $("password-input").value = "";
-    });
+    // ---- session handling -----------------------------------------
+    function onSession(user) {
+      if (!user) { showMessage("auth-error"); showMessage("auth-success"); showView("forms"); return; }
+      // Signed up (or already signed in): continue to the intended action.
+      if (NEXT !== "/") { window.location.assign(NEXT); return; }
+      window.location.assign("/"); // account created -> homepage (account control shows)
+    }
 
     // ---- boot -----------------------------------------------------
     async function boot() {
@@ -323,9 +280,7 @@
         showView("unavailable");
         return;
       }
-      // Re-render whenever the session changes (first load, OAuth return,
-      // sign-in/sign-out, token refresh). renderAccount(null) -> forms.
-      RR_AUTH.onAuthChange(renderAccount);
+      RR_AUTH.onAuthChange(onSession);
     }
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", boot);

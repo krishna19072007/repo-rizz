@@ -231,13 +231,15 @@ function parseGitHubUrlHelper(input) {
         return;
       }
       if (inputError) inputError.classList.add("hidden");
-      window.location.href = `/analyze?repo=${parsed.owner}/${parsed.name}`;
+      // Analysis requires an account: gate before navigating (never calls
+      // the API for a logged-out visitor).
+      RR_AUTH.go(`/analyze?repo=${parsed.owner}/${parsed.name}`);
     });
   }
 
   if (demoBtn) {
     demoBtn.addEventListener("click", () => {
-      window.location.href = "/analyze?repo=krishna19072007/repo-rizz";
+      RR_AUTH.go("/analyze?repo=krishna19072007/repo-rizz");
     });
   }
 

@@ -34,6 +34,7 @@ import logging
 
 from admin_auth import auth_router, cookie_is_secure
 from contributors_api import router as contributors_router
+from user_history import router as user_history_router
 
 load_dotenv(); load_dotenv("../.env.local")
 
@@ -135,6 +136,7 @@ app.add_middleware(MaxBodySizeMiddleware)
 # Feature routers (see module docstrings for what each owns)
 app.include_router(auth_router)
 app.include_router(contributors_router)
+app.include_router(user_history_router)
 
 class AnalyzeRequest(BaseModel):
     owner: str
@@ -263,6 +265,11 @@ async def serve_login():
     # separate from Rizz Master admin auth at /contributors/admin.
     # no-store so a stale cached copy of an auth page can never resurface.
     return FileResponse("../frontend/login.html", headers={"Cache-Control": "no-store"})
+
+@app.get("/signup")
+async def serve_signup():
+    # Normal-user account creation (Supabase email + password / GitHub OAuth).
+    return FileResponse("../frontend/signup.html", headers={"Cache-Control": "no-store"})
 
 @app.get("/contributors")
 async def serve_contributors():
