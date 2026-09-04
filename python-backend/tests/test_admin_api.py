@@ -39,6 +39,10 @@ NOT_IMAGE = b"this is definitely not an image file...." + b"x" * 64
 @pytest.fixture(autouse=True)
 def clean_state(tmp_path, monkeypatch):
     """Isolate sessions, rate limiter, and the database for every test."""
+    # Tests must stay hermetic: force the SQLite store even when the
+    # operator's .env configures Supabase (never hit a live database).
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+    monkeypatch.delenv("SUPABASE_SERVICE_ROLE_KEY", raising=False)
     monkeypatch.setenv("CONTRIBUTORS_DB_PATH", str(tmp_path / "test.db"))
     reset_store_cache()
     sessions.clear()

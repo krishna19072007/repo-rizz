@@ -228,7 +228,7 @@ def admin_create_contributor(req: ContributorCreate, _session: dict = Depends(ad
 
 @router.put("/api/admin/contributors/{contributor_id}")
 def admin_update_contributor(
-    contributor_id: int,
+    contributor_id: str,
     req: ContributorUpdate,
     _session: dict = Depends(admin_guard),
 ):
@@ -250,7 +250,7 @@ def admin_update_contributor(
 
 
 @router.delete("/api/admin/contributors/{contributor_id}")
-def admin_delete_contributor(contributor_id: int, _session: dict = Depends(admin_guard)):
+def admin_delete_contributor(contributor_id: str, _session: dict = Depends(admin_guard)):
     store = get_store()
     existing = store.get_contributor(contributor_id)
     if existing is None:
@@ -270,7 +270,7 @@ def admin_delete_contributor(contributor_id: int, _session: dict = Depends(admin
 
 @router.post("/api/admin/contributors/{contributor_id}/image")
 def admin_upload_image(
-    contributor_id: int,
+    contributor_id: str,
     image: UploadFile = File(...),
     _session: dict = Depends(admin_guard),
 ):
