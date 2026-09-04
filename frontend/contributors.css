@@ -1,0 +1,185 @@
+/* ============================================================
+   Contributors styles — shared by /contributors (public
+   directory) and /contributors/admin (Rizz Master panel).
+   Extracted verbatim from the original single-page styles so
+   the visual design is unchanged.
+   ============================================================ */
+
+body {
+  background-color: #070809;
+  color: #ffffff;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+.grid-bg {
+  background-size: 50px 50px;
+  background-image: linear-gradient(to right, rgba(39, 42, 48, 0.15) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(39, 42, 48, 0.15) 1px, transparent 1px);
+  background-position: center;
+}
+
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+.scanline-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; height: 100px;
+  background: linear-gradient(to bottom, transparent, rgba(182, 255, 66, 0.015), transparent);
+  animation: scanline 12s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ---- Contributor card effects ---- */
+.contributor-card {
+  transform-style: preserve-3d;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.3s ease,
+              box-shadow 0.3s ease;
+}
+.contributor-card:hover {
+  transform: translateY(-6px) rotateX(2deg) scale(1.015);
+  box-shadow: 0 12px 40px rgba(182, 255, 66, 0.08), 0 0 0 1px rgba(182, 255, 66, 0.15);
+}
+.contributor-card:hover .card-avatar-wrap {
+  border-color: rgba(182, 255, 66, 0.45);
+}
+.contributor-card:hover .card-glow {
+  opacity: 1;
+}
+.card-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.08), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.card-avatar-wrap {
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s ease;
+}
+.card-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 0;
+  transform: scale(1.06);
+  filter: blur(6px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-avatar.loaded {
+  opacity: 1;
+  transform: scale(1);
+  filter: blur(0);
+}
+/* subtle pixel-inspired hover: crisp pixelated zoom */
+.contributor-card:hover .card-avatar {
+  image-rendering: pixelated;
+  transform: scale(1.05);
+}
+.card-pixel-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 8px 8px;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+.card-avatar-skeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, #0f1115 30%, #181b21 50%, #0f1115 70%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s linear infinite;
+}
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.card-reveal {
+  opacity: 0;
+  transform: translateY(24px) scale(0.98);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-reveal.revealed {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* ---- Modals ---- */
+.modal-panel {
+  animation: modal-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.admin-panel-enter {
+  animation: admin-in 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes admin-in {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Toasts ---- */
+#toast-container {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  pointer-events: none;
+}
+.toast {
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid #272a30;
+  background: #0f1115;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  animation: toast-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: min(90vw, 480px);
+}
+.toast.success { border-color: rgba(182,255,66,0.4); color: #b6ff42; }
+.toast.error { border-color: rgba(255,92,92,0.4); color: #ff5c5c; }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.toast.out { opacity: 0; transform: translateY(8px); transition: all 0.3s ease; }
+
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(7,8,9,0.25);
+  border-top-color: #070809;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .scanline-overlay, .card-avatar-skeleton, .spinner { animation: none !important; }
+  .card-reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .contributor-card:hover { transform: none !important; }
+  .card-avatar { opacity: 1; transform: none; filter: none; transition: none; }
+  .modal-panel, .admin-panel-enter, .toast { animation: none !important; }
+}

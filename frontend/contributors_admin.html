@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rizz Master Admin | Repo Rizz</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: '#070809',
+            surface: '#0f1115',
+            'surface-elevated': '#181b21',
+            border: '#272a30',
+            lime: '#b6ff42',
+            violet: '#8b5cf6',
+            coral: '#ff5c5c',
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/static/contributors.css">
+</head>
+<body class="min-h-full flex flex-col grid-bg">
+
+  <div class="scanline-overlay"></div>
+  <div class="fixed inset-0 bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.04),transparent_40%)] pointer-events-none z-0"></div>
+
+  <!-- Navbar -->
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-border" style="background: rgba(7, 8, 9, 0.85); backdrop-filter: blur(12px);">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <button id="logo-btn" class="relative w-8 h-8 focus:outline-none focus:ring-2 focus:ring-lime rounded-sm transition-transform hover:scale-105">
+          <img src="/static/logo.png" alt="Repo Rizz Logo" class="object-contain w-full h-full">
+        </button>
+        <a href="/" class="flex items-center">
+          <span class="text-lg font-semibold tracking-tight hover:opacity-80 transition-opacity">
+            REPO <span class="text-lime">RIZZ</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="hidden md:flex items-center gap-1">
+        <a href="/" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-surface">Home</a>
+        <a href="/analyze" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-surface">Repo's Rizz</a>
+        <a href="/compare" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-surface">Repo Battle</a>
+        <a href="/history" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-surface">History</a>
+        <a href="/contributors" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-lime bg-surface-elevated">Contributors</a>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="https://github.com/krishna19072007/repo-rizz" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white text-sm transition-colors flex items-center gap-1">
+          <i data-lucide="github" class="w-4 h-4"></i> GitHub
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="flex-1 w-full max-w-3xl mx-auto px-6 pt-28 pb-24 relative z-10">
+
+    <!-- Header -->
+    <header class="space-y-4 mb-10">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-violet/25 bg-violet/5 text-violet text-xs font-mono tracking-wider uppercase">
+        <span class="w-1.5 h-1.5 rounded-full bg-violet animate-pulse"></span>
+        Admin Console · server-side verified
+      </div>
+      <h1 class="text-5xl font-extrabold tracking-tight leading-none text-white">
+        RIZZ <span class="text-lime">MASTER</span>
+      </h1>
+      <p class="text-gray-400 text-base max-w-xl leading-relaxed">
+        Manage the contributors shown on the public directory.
+      </p>
+    </header>
+
+    <!-- ===================== Login view (not authenticated) ===================== -->
+    <section id="login-view">
+      <div class="modal-panel rounded-2xl border border-border bg-surface shadow-2xl overflow-hidden max-w-sm mx-auto">
+        <div class="px-8 pt-8 pb-6 flex flex-col items-center text-center">
+          <div class="w-12 h-12 rounded-xl bg-lime/10 flex items-center justify-center text-lime mb-4">
+            <i data-lucide="shield-check" class="w-6 h-6"></i>
+          </div>
+          <h2 class="text-lg font-bold tracking-widest text-white uppercase">Rizz Master Access</h2>
+          <p class="text-[10px] font-mono text-gray-500 mt-1 uppercase tracking-widest">Enter Rizz Code</p>
+        </div>
+        <form id="login-form" class="px-8 pb-8 space-y-4">
+          <input type="password" id="login-code" autocomplete="current-password" maxlength="512"
+                 placeholder="••••••••"
+                 class="w-full px-4 py-3 rounded-xl border border-border bg-bg text-white font-mono text-center text-lg tracking-[0.3em] outline-none transition-all duration-300 focus:border-lime/50 focus:shadow-[0_0_20px_rgba(182,255,66,0.1)] placeholder:text-gray-700">
+          <button type="submit" id="login-submit"
+                  class="w-full py-3 rounded-xl bg-lime text-black text-xs font-mono font-bold tracking-[0.2em] uppercase hover:scale-[1.01] active:scale-[0.99] transition-transform flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+            <span>Enter</span>
+          </button>
+          <p id="login-status" class="hidden text-xs font-mono text-center min-h-[16px]"></p>
+        </form>
+      </div>
+    </section>
+
+    <!-- ===================== Admin panel (authenticated) ===================== -->
+    <section id="admin-view" class="hidden">
+      <div class="admin-panel-enter rounded-2xl border border-lime/25 bg-surface/80 backdrop-blur-sm overflow-hidden">
+        <div class="flex flex-wrap items-center justify-between gap-4 px-6 py-4 border-b border-border">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-lime/10 flex items-center justify-center text-lime">
+              <i data-lucide="crown" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h2 class="text-sm font-bold tracking-widest text-lime uppercase">Rizz Master Panel</h2>
+              <p class="text-[10px] font-mono text-gray-500">Session authenticated · changes go live instantly</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-lime/25 bg-lime/5 text-lime text-[9px] font-mono tracking-widest uppercase">
+              <span class="w-1.5 h-1.5 rounded-full bg-lime"></span>
+              Rizz Master
+            </span>
+            <button id="logout-btn"
+                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg border border-border bg-surface text-[11px] font-mono tracking-widest text-gray-400 hover:text-coral hover:border-coral/40 transition-all duration-300">
+              <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+              LOG OUT
+            </button>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 border-b border-border flex flex-wrap items-center justify-between gap-3">
+          <p class="text-[10px] font-mono text-gray-500">
+            Set a contributor's <span class="text-gray-300">DISPLAY ORDER</span> when adding or editing to control card order (lowest first).
+          </p>
+          <button id="add-contributor-btn"
+                  class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-lime text-black text-[11px] font-mono font-bold tracking-widest hover:scale-[1.03] active:scale-95 transition-transform">
+            <i data-lucide="plus" class="w-3.5 h-3.5 text-black"></i>
+            ADD CONTRIBUTOR
+          </button>
+        </div>
+
+        <div id="admin-list" class="divide-y divide-border/60"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== Contributor Form Modal ===================== -->
+  <div id="form-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-close-form></div>
+    <div class="modal-panel relative w-full max-w-lg rounded-2xl border border-border bg-surface shadow-2xl overflow-hidden z-10 max-h-[90vh] flex flex-col">
+      <div class="px-8 pt-7 pb-5 border-b border-border flex items-center justify-between">
+        <h2 id="form-modal-title" class="text-sm font-bold tracking-widest text-white uppercase">Add Contributor</h2>
+        <button type="button" class="p-1.5 rounded-full text-gray-400 hover:text-white hover:bg-surface-elevated transition-colors" data-close-form>
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <form id="contributor-form" class="px-8 py-6 space-y-4 overflow-y-auto">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="text-[10px] font-mono text-gray-500 uppercase tracking-widest block mb-1.5">GitHub username *</label>
+            <input type="text" id="f-username" maxlength="39" required placeholder="octocat"
+                   class="w-full px-3.5 py-2.5 rounded-lg border border-border bg-bg text-white text-sm font-mono outline-none focus:border-lime/50 transition-colors placeholder:text-gray-700">
+          </div>
+          <div>
+            <label class="text-[10px] font-mono text-gray-500 uppercase tracking-widest block mb-1.5">Display name *</label>
+            <input type="text" id="f-display-name" maxlength="100" required placeholder="Ada Lovelace"
+                   class="w-full px-3.5 py-2.5 rounded-lg border border-border bg-bg text-white text-sm outline-none focus:border-lime/50 transition-colors placeholder:text-gray-700">
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="text-[10px] font-mono text-gray-500 uppercase tracking-widest block mb-1.5">Role</label>
+            <input type="text" id="f-role" maxlength="80" placeholder="Core Engineer"
+                   class="w-full px-3.5 py-2.5 rounded-lg border border-border bg-bg text-white text-sm outline-none focus:border-lime/50 transition-colors placeholder:text-gray-700">
+          </div>
+          <div>
+            <label class="text-[10px] font-mono text-gray-500 uppercase tracking-widest block mb-1.5">Display order</label>
+            <input type="number" id="f-order" min="0" max="9999" placeholder="0"
+                   class="w-full px-3.5 py-2.5 rounded-lg border border-border bg-bg text-white text-sm font-mono outline-none focus:border-lime/50 transition-colors placeholder:text-gray-700">
+          </div>
+        </div>
+        <div>
+          <label class="text-[10px] font-mono text-gray-500 uppercase tracking-widest block mb-1.5">Description</label>
+          <textarea id="f-description" maxlength="500" rows="3" placeholder="What this contributor does for Repo Rizz..."
+                    class="w-full px-3.5 py-2.5 rounded-lg border border-border bg-bg text-white text-sm outline-none focus:border-lime/50 transition-colors placeholder:text-gray-700 resize-none"></textarea>
+        </div>
+        <div>
+          <label class="text-[10px] font-mono text-gray-500 uppercase tracking-widest block mb-1.5">GitHub URL (optional, HTTPS github.com only)</label>
+          <input type="text" id="f-github-url" maxlength="200" placeholder="https://github.com/octocat"
+                 class="w-full px-3.5 py-2.5 rounded-lg border border-border bg-bg text-white text-sm font-mono outline-none focus:border-lime/50 transition-colors placeholder:text-gray-700">
+        </div>
+        <div>
+          <label class="text-[10px] font-mono text-gray-500 uppercase tracking-widest block mb-1.5">Custom image (PNG / JPG / GIF / WebP, max 2 MB)</label>
+          <input type="file" id="f-image" accept="image/png,image/jpeg,image/gif,image/webp"
+                 class="w-full text-sm text-gray-400 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border file:border-border file:bg-surface-elevated file:text-gray-300 file:text-xs file:font-mono hover:file:border-lime/40 hover:file:text-lime transition-colors cursor-pointer">
+        </div>
+        <p id="form-error" class="hidden text-xs font-mono text-coral"></p>
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button type="button" class="px-4 py-2.5 rounded-lg border border-border text-xs font-mono text-gray-400 hover:text-white transition-colors" data-close-form>CANCEL</button>
+          <button type="submit" id="form-submit"
+                  class="px-5 py-2.5 rounded-lg bg-lime text-black text-xs font-mono font-bold tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2">
+            <span>SAVE</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================== Delete Confirm Modal ===================== -->
+  <div id="delete-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-close-delete></div>
+    <div class="modal-panel relative w-full max-w-sm rounded-2xl border border-border bg-surface shadow-2xl overflow-hidden z-10 p-8 text-center">
+      <div class="w-12 h-12 mx-auto rounded-xl bg-coral/10 flex items-center justify-center text-coral mb-4">
+        <i data-lucide="trash-2" class="w-6 h-6"></i>
+      </div>
+      <h2 class="text-lg font-bold text-white">Remove this contributor?</h2>
+      <p id="delete-target-name" class="text-sm text-gray-400 mt-2">This cannot be undone.</p>
+      <div class="flex items-center justify-center gap-3 mt-7">
+        <button type="button" class="px-5 py-2.5 rounded-lg border border-border text-xs font-mono text-gray-400 hover:text-white transition-colors" data-close-delete>CANCEL</button>
+        <button type="button" id="delete-confirm-btn"
+                class="px-5 py-2.5 rounded-lg bg-coral text-black text-xs font-mono font-bold tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2">
+          <span>REMOVE</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <!-- Footer & Brand Modal injected by app.js -->
+
+  <script src="/static/app.js"></script>
+  <script>
+    // ============================================================
+    // Rizz Master admin panel (/contributors/admin).
+    // This page NEVER decides authorization itself: every mutation
+    // goes to the backend, which verifies the HttpOnly session +
+    // CSRF token server-side before allowing anything.
+    // ============================================================
+    const adminState = { authenticated: false, csrfToken: null };
+    let contributors = [];
+    let editingId = null;
+    let deletingId = null;
+
+    const PLACEHOLDER_URI = "data:image/svg+xml;utf8," + encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+        <rect width="400" height="400" fill="#0f1115"/>
+        <circle cx="200" cy="160" r="56" fill="none" stroke="#272a30" stroke-width="6"/>
+        <path d="M60 330c20-64 80-96 140-96s120 32 140 96" fill="none" stroke="#272a30" stroke-width="6"/>
+        <text x="200" y="368" text-anchor="middle" fill="#3a3f46" font-family="monospace" font-size="14" letter-spacing="4">REPO RIZZ</text>
+      </svg>`
+    );
+
+    // --- helpers -------------------------------------------------
+    function esc(value) {
+      return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    function showToast(message, type) {
+      const container = document.getElementById("toast-container");
+      const toast = document.createElement("div");
+      toast.className = `toast ${type === "error" ? "error" : "success"}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add("out");
+        setTimeout(() => toast.remove(), 350);
+      }, 3200);
+    }
+
+    function api(path, options = {}) {
+      const headers = { ...(options.headers || {}) };
+      if (options.json !== undefined) headers["Content-Type"] = "application/json";
+      const method = (options.method || "GET").toUpperCase();
+      if (adminState.csrfToken && method !== "GET") headers["X-CSRF-Token"] = adminState.csrfToken;
+      return fetch(path, {
+        method,
+        headers,
+        credentials: "same-origin",
+        body: options.json !== undefined ? JSON.stringify(options.json) : (options.body || undefined),
+      });
+    }
+
+    async function readError(res, parsed) {
+      try {
+        const data = parsed !== undefined ? parsed : await res.json();
+        if (typeof data.detail === "string") return data.detail;
+        if (Array.isArray(data.detail) && data.detail.length) {
+          const first = data.detail.find(d => d && d.msg);
+          if (first) return first.msg;
+        }
+        if (data.detail) return String(data.detail);
+        return data.message || "Request failed.";
+      } catch (e) {
+        return "Request failed.";
+      }
+    }
+
+    function avatarSources(c) {
+      const sources = [];
+      if (c.custom_avatar_url) sources.push(c.custom_avatar_url);
+      sources.push(`https://github.com/${encodeURIComponent(c.github_username)}.png`);
+      sources.push(PLACEHOLDER_URI);
+      return sources;
+    }
+
+    function refreshIcons() {
+      if (typeof lucide !== "undefined") lucide.createIcons();
+    }
+
+    // --- view switching -------------------------------------------
+    function showLoginView() {
+      document.getElementById("admin-view").classList.add("hidden");
+      document.getElementById("login-view").classList.remove("hidden");
+      document.getElementById("login-code").value = "";
+      document.getElementById("login-status").classList.add("hidden");
+      refreshIcons();
+    }
+
+    function showAdminView() {
+      document.getElementById("login-view").classList.add("hidden");
+      document.getElementById("admin-view").classList.remove("hidden");
+      refreshIcons();
+      loadContributors();
+    }
+
+    // --- data loading ---------------------------------------------
+    async function loadContributors() {
+      try {
+        const res = await fetch("/api/contributors", { credentials: "same-origin" });
+        if (!res.ok) throw new Error("failed");
+        const data = await res.json();
+        contributors = Array.isArray(data.contributors) ? data.contributors : [];
+        renderAdminList();
+      } catch (e) {
+        showToast("Could not load contributors. Is the backend running?", "error");
+      }
+    }
+
+    function renderAdminList() {
+      const list = document.getElementById("admin-list");
+      if (contributors.length === 0) {
+        list.innerHTML = `<div class="px-6 py-10 text-center text-xs font-mono text-gray-500">NO CONTRIBUTORS YET — ADD THE FIRST ONE.</div>`;
+        return;
+      }
+      list.innerHTML = contributors.map(c => `
+        <div class="px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-surface-elevated/50 transition-colors">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-8 h-8 rounded-lg bg-surface-elevated border border-border overflow-hidden shrink-0">
+              <img src="${esc(avatarSources(c)[0])}" alt="" class="w-full h-full object-cover"
+                   onerror="this.onerror=null;this.src='${PLACEHOLDER_URI}'">
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-white truncate">${esc(c.display_name)}</p>
+              <p class="text-[10px] font-mono text-gray-500 truncate">@${esc(c.github_username)} · order ${esc(c.display_order)}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button data-edit-id="${esc(c.id)}" class="edit-btn p-2 rounded-lg border border-border text-gray-400 hover:text-lime hover:border-lime/40 transition-colors" title="Edit">
+              <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+            </button>
+            <button data-delete-id="${esc(c.id)}" class="delete-btn p-2 rounded-lg border border-border text-gray-400 hover:text-coral hover:border-coral/40 transition-colors" title="Delete">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>`).join("");
+      list.querySelectorAll(".edit-btn").forEach(btn =>
+        btn.addEventListener("click", () => openForm(btn.dataset.editId)));
+      list.querySelectorAll(".delete-btn").forEach(btn =>
+        btn.addEventListener("click", () => confirmDelete(btn.dataset.deleteId)));
+      refreshIcons();
+    }
+
+    // --- session bootstrap -----------------------------------------
+    async function checkAdmin() {
+      try {
+        const res = await fetch("/api/admin/me", { credentials: "same-origin" });
+        const data = await res.json();
+        if (res.ok && data.authenticated) {
+          adminState.authenticated = true;
+          adminState.csrfToken = data.csrf_token || null;
+          showAdminView();
+        } else {
+          showLoginView();
+        }
+      } catch (e) {
+        showLoginView();
+      }
+    }
+
+    function sessionExpired() {
+      adminState.authenticated = false;
+      adminState.csrfToken = null;
+      showLoginView();
+      showToast("Session expired. Log in again.", "error");
+    }
+
+    // --- login ------------------------------------------------------
+    function setLoginStatus(message, kind) {
+      const el = document.getElementById("login-status");
+      el.classList.remove("hidden");
+      el.textContent = message;
+      el.style.color = kind === "error" ? "#ff5c5c" : kind === "ok" ? "#b6ff42" : "#9ca3af";
+    }
+
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const input = document.getElementById("login-code");
+      const button = document.getElementById("login-submit");
+      const code = input.value;
+
+      setLoginStatus("VERIFYING...", "neutral");
+      button.disabled = true;
+      button.innerHTML = '<span class="spinner"></span>';
+
+      try {
+        const res = await api("/api/admin/login", { method: "POST", json: { code } });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.authenticated) {
+          adminState.authenticated = true;
+          adminState.csrfToken = data.csrf_token || null;
+          setLoginStatus("ACCESS GRANTED", "ok");
+          input.value = "";
+          setTimeout(() => {
+            showAdminView();
+            showToast("Rizz Master authenticated.", "success");
+          }, 350);
+        } else if (res.status === 401) {
+          setLoginStatus("Invalid credentials.", "error");
+        } else if (res.status === 429) {
+          setLoginStatus("Too many attempts. Try again later.", "error");
+        } else if (res.status === 503) {
+          setLoginStatus(data.detail || "Rizz Master is not configured.", "error");
+        } else {
+          setLoginStatus(await readError(res, data), "error");
+        }
+      } catch (err) {
+        setLoginStatus("Network error. Check that the backend is running.", "error");
+      }
+      // Always restore the button so the form can be used again.
+      button.disabled = false;
+      button.innerHTML = "<span>Enter</span>";
+    });
+
+    // --- logout -----------------------------------------------------
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      try {
+        await api("/api/admin/logout", { method: "POST" });
+      } catch (e) { /* best effort */ }
+      adminState.authenticated = false;
+      adminState.csrfToken = null;
+      showLoginView();
+      showToast("Logged out. Admin session revoked.", "success");
+    });
+
+    // --- contributor form (add / edit) ------------------------------
+    function openForm(id) {
+      editingId = id || null;
+      document.getElementById("form-modal-title").textContent = editingId ? "Edit Contributor" : "Add Contributor";
+      const f = (n) => document.getElementById(n);
+      if (editingId) {
+        const c = contributors.find(x => String(x.id) === String(editingId));
+        if (!c) return;
+        f("f-username").value = c.github_username || "";
+        f("f-display-name").value = c.display_name || "";
+        f("f-role").value = c.role || "";
+        f("f-description").value = c.description || "";
+        f("f-github-url").value = c.github_url || "";
+        f("f-order").value = c.display_order != null ? c.display_order : 0;
+        f("f-image").value = "";
+      } else {
+        ["f-username", "f-display-name", "f-role", "f-description", "f-github-url", "f-image"].forEach(n => f(n).value = "");
+        f("f-order").value = 0;
+      }
+      document.getElementById("form-error").classList.add("hidden");
+      document.getElementById("form-modal").classList.remove("hidden");
+    }
+
+    document.getElementById("contributor-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const f = (n) => document.getElementById(n);
+      const errEl = document.getElementById("form-error");
+      const submitBtn = document.getElementById("form-submit");
+      errEl.classList.add("hidden");
+
+      const payload = {
+        github_username: f("f-username").value.trim(),
+        display_name: f("f-display-name").value.trim(),
+        role: f("f-role").value.trim(),
+        description: f("f-description").value.trim(),
+        display_order: f("f-order").value === "" ? 0 : Number(f("f-order").value),
+      };
+      if (f("f-github-url").value.trim()) payload.github_url = f("f-github-url").value.trim();
+
+      submitBtn.disabled = true;
+      const original = submitBtn.innerHTML;
+      submitBtn.innerHTML = '<span class="spinner"></span>';
+
+      try {
+        let res, data;
+        if (editingId) {
+          res = await api(`/api/admin/contributors/${encodeURIComponent(editingId)}`, { method: "PUT", json: payload });
+        } else {
+          res = await api("/api/admin/contributors", { method: "POST", json: payload });
+        }
+        if (res.status === 401 || res.status === 403) {
+          errEl.classList.add("hidden");
+          closeModal("form-modal");
+          sessionExpired();
+          return;
+        }
+        data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          errEl.textContent = await readError(res, data);
+          errEl.classList.remove("hidden");
+          return;
+        }
+        const contributor = data.contributor;
+
+        // Custom image upload (validated + authorized server-side)
+        const fileInput = f("f-image");
+        if (fileInput.files && fileInput.files[0]) {
+          const fd = new FormData();
+          fd.append("image", fileInput.files[0]);
+          const imgRes = await api(`/api/admin/contributors/${encodeURIComponent(contributor.id)}/image`, {
+            method: "POST",
+            body: fd,
+          });
+          if (imgRes.status === 401 || imgRes.status === 403) {
+            closeModal("form-modal");
+            sessionExpired();
+            return;
+          }
+          if (!imgRes.ok) {
+            showToast((await readError(imgRes)) + " (contributor saved, image not attached).", "error");
+          } else {
+            showToast(editingId ? "Contributor updated with new image." : "Contributor added with image.", "success");
+          }
+        } else {
+          showToast(editingId ? "Contributor updated." : "Contributor added.", "success");
+        }
+        closeModal("form-modal");
+        await loadContributors();
+      } catch (err) {
+        errEl.textContent = "Network error. Is the backend running?";
+        errEl.classList.remove("hidden");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = original;
+      }
+    });
+
+    // --- delete confirm ----------------------------------------------
+    function confirmDelete(id) {
+      deletingId = id;
+      const c = contributors.find(x => String(x.id) === String(id));
+      document.getElementById("delete-target-name").textContent = c
+        ? `"${c.display_name}" (@${c.github_username}) will be removed permanently.`
+        : "This cannot be undone.";
+      document.getElementById("delete-modal").classList.remove("hidden");
+    }
+
+    document.getElementById("delete-confirm-btn").addEventListener("click", async () => {
+      const btn = document.getElementById("delete-confirm-btn");
+      btn.disabled = true;
+      try {
+        const res = await api(`/api/admin/contributors/${encodeURIComponent(deletingId)}`, { method: "DELETE" });
+        if (res.status === 401 || res.status === 403) {
+          closeModal("delete-modal");
+          sessionExpired();
+          return;
+        }
+        if (res.ok) {
+          closeModal("delete-modal");
+          showToast("Contributor removed.", "success");
+          await loadContributors();
+        } else {
+          showToast(await readError(res), "error");
+        }
+      } catch (err) {
+        showToast("Network error. Is the backend running?", "error");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // --- modal helpers & close wiring --------------------------------
+    function closeModal(id) { document.getElementById(id).classList.add("hidden"); }
+    document.getElementById("add-contributor-btn").addEventListener("click", () => openForm(null));
+    document.querySelectorAll("[data-close-form]").forEach(el => el.addEventListener("click", () => closeModal("form-modal")));
+    document.querySelectorAll("[data-close-delete]").forEach(el => el.addEventListener("click", () => closeModal("delete-modal")));
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        ["form-modal", "delete-modal"].forEach(id => closeModal(id));
+      }
+    });
+
+    // --- boot ---------------------------------------------------------
+    function boot() {
+      checkAdmin();
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", boot);
+    } else {
+      boot();
+    }
+  </script>
+</body>
+</html>

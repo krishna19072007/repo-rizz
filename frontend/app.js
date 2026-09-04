@@ -52,6 +52,12 @@ function parseGitHubUrlHelper(input) {
           <div class="flex flex-col items-center md:items-start text-center md:text-left">
             <span class="text-lg font-bold tracking-tight text-white">REPO <span class="text-lime">RIZZ</span></span>
             <p class="text-xs mt-1 text-gray-500">Advanced GitHub repository analysis for developers.</p>
+            <!-- Discreet admin entry. Kept on the left, under the tagline:
+                 the far-right corner of the footer sits under the floating
+                 chat button and would make the link unclickable. -->
+            <a href="/contributors/admin" class="mt-2 inline-flex items-center gap-1 text-[10px] font-mono tracking-widest text-gray-600 hover:text-lime transition-colors" title="Rizz Master access">
+              <i data-lucide="shield" class="w-3 h-3"></i> RIZZ-MASTER?
+            </a>
           </div>
           <div class="flex items-center gap-6">
             <a href="/about" class="text-sm text-gray-400 hover:text-lime transition-colors">About</a>

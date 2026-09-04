@@ -23,6 +23,8 @@ Session learnings for Repo Rizz — things not recoverable by reading the code a
 - Admin sessions and rate-limit state are per-process, in-memory singletons (`python-backend/admin_auth.py`): a server restart logs out every session **and** resets the limiter. Both behaviors are intended and covered by tests.
 - Root `.gitignore` line `.env*` also ignores `.env.template`; it needs explicit negations (`!.env.template`, `!python-backend/.env.template`) placed after that line.
 - The multipart image-upload endpoint requires `python-multipart`; importing `main` fails without it.
+- FastAPI `FileResponse` page routes send ETag/Last-Modified, so browsers heuristically cache the HTML. When a page's content changes the security surface (the old contributors build carried admin UI on the public URL), serve `Cache-Control: no-store` — only the `/contributors` and `/contributors/admin` routes do.
+- In the Preview tab, a plain navigation/reload can keep showing a stale cached copy of a changed page (and old cache entries predate new `no-store` headers). Force a fresh document with a cache-busting query (`/contributors?cb=1`) and refresh a changed shared asset with `fetch('/static/app.js', {cache:'reload'})` before verifying UI changes in-browser.
 
 ## Testing
 - Tests run from `python-backend/`: `python -m pytest tests/`. The test module sets `RIZZ_MASTER_CODE`/`COOKIE_SECURE` **before** importing `main`, and isolates each test to a temp DB via a monkeypatched `CONTRIBUTORS_DB_PATH` — this only works because the SQLite store reads the env var at construction time, not via an import-time default arg. The autouse `clean_state` fixture also deletes the SUPABASE_* env vars so tests never hit the live Supabase project.
@@ -32,9 +34,12 @@ Session learnings for Repo Rizz — things not recoverable by reading the code a
 
 ## Frontend conventions
 - Shared navbar/footer/brand-modal/chatbot are injected at runtime by `/static/app.js`; each page's navbar links are duplicated per-page HTML, so a navbar change touches every page, while a footer change is one edit in `app.js`.
+- Contributors is split into TWO pages that must change together: `/contributors` (`frontend/contributors.html`) is the permanent public directory — it must never contain admin UI or call `/api/admin/me` (a pytest test forbids admin markers in its HTML) — and `/contributors/admin` (`frontend/contributors_admin.html`, route in `main.py`) is the auth-gated management page whose mutations rely on the server-side session+CSRF. Both pages share `frontend/contributors.css`; style edits go there, not inline.
+- The site footer (in `app.js`) includes the discreet RIZZ-MASTER? link to `/contributors/admin`. Keep it in the footer's LEFT column under the tagline: the far-right bottom corner sits under the fixed chat FAB, which makes links there unclickable (the GitHub link already has this pre-existing overlap at full scroll-bottom).
 - The lucide CDN has no `github` brand icon: `app.js` swaps `data-lucide="github"` for an inline SVG only for elements present at load. Dynamically-rendered github icons must embed that inline SVG directly or they render nothing and log a console warning.
 - Backend CSP limits `img-src` to `'self' data: github.com avatars.githubusercontent.com` — avatar/image hotlinks must come from those origins.
 
 ## Windows tooling quirks
 - Windows system `curl` cannot open Git Bash `/tmp` paths: `-F "image=@/tmp/x.png"` fails silently (empty body / HTTP 000). Use project-relative paths for multipart upload tests.
 - Backgrounding a server with `&` inside a terminal command keeps the call running until timeout — launch the server, then run checks in separate commands. The listening PID from `netstat -ano | grep :PORT` differs from the shell `$!` PID; kill by the netstat PID.
+- Two uvicorn instances can listen on the same port at once when one binds `0.0.0.0:PORT` and another `127.0.0.1:PORT`. Before restarting a dev server, kill EVERY pid from `netstat -ano | grep :PORT | grep LISTENING`, or your checks can hit a stale process running old code.

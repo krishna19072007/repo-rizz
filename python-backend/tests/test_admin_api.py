@@ -503,8 +503,35 @@ def test_upload_endpoint_rejects_bad_filename(client):
 
 
 # ---------------------------------------------------------------------------
-# Public API
+# Page routing: /contributors (public) vs /contributors/admin (admin UI)
 # ---------------------------------------------------------------------------
+
+def test_public_contributors_page_has_no_admin_controls(client):
+    # The public directory must never contain admin UI, even as markup.
+    r = client.get("/contributors")
+    assert r.status_code == 200
+    html = r.text
+    assert "Meet the people building Repo Rizz." in html
+    assert "contributors-grid" in html
+    for forbidden in [
+        "rizz-master", "RIZZ-MASTER?", "login-form", "login-code",
+        "admin-panel", "admin-view", "add-contributor-btn",
+        "logout-btn", "ADD CONTRIBUTOR", "data-edit-id",
+    ]:
+        assert forbidden not in html, f"public page must not contain {forbidden}"
+
+
+def test_admin_page_route_serves_management_ui(client):
+    # /contributors/admin is a static UI page; its privileged actions are
+    # still authorized server-side by the admin session + CSRF.
+    r = client.get("/contributors/admin")
+    assert r.status_code == 200
+    html = r.text
+    assert "Rizz Master Access" in html          # login view
+    assert "admin-view" in html                  # panel view
+    assert "add-contributor-btn" in html
+    assert "logout-btn" in html
+
 
 def test_public_contributors_requires_no_auth(client):
     res = client.get("/api/contributors")

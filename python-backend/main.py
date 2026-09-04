@@ -228,4 +228,14 @@ async def serve_privacy():
 
 @app.get("/contributors")
 async def serve_contributors():
-    return FileResponse("../frontend/contributors.html")
+    # Public directory page — never shows admin controls and never checks
+    # the admin session. Management UI lives at /contributors/admin.
+    return FileResponse("../frontend/contributors.html", headers={"Cache-Control": "no-store"})
+
+@app.get("/contributors/admin")
+async def serve_contributors_admin():
+    # Rizz Master management page. The HTML is static; every privileged
+    # action is authorized server-side by the admin session + CSRF.
+    # no-store keeps a stale cached copy (the old build carried admin UI
+    # on the public URL) from ever resurfacing.
+    return FileResponse("../frontend/contributors_admin.html", headers={"Cache-Control": "no-store"})
