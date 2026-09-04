@@ -63,6 +63,7 @@ function parseGitHubUrlHelper(input) {
             <a href="/about" class="text-sm text-gray-400 hover:text-lime transition-colors">About</a>
             <a href="/contributors" class="text-sm text-gray-400 hover:text-lime transition-colors">Contributors</a>
             <a href="/privacy" class="text-sm text-gray-400 hover:text-lime transition-colors">Privacy Policy</a>
+            <a href="/login" class="text-sm text-gray-400 hover:text-lime transition-colors">Log In</a>
             <a href="https://github.com/krishna19072007/repo-rizz" target="_blank" rel="noopener noreferrer" class="text-sm text-gray-400 hover:text-lime transition-colors">GitHub</a>
           </div>
         </div>

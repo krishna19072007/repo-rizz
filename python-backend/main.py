@@ -37,6 +37,36 @@ from contributors_api import router as contributors_router
 
 load_dotenv(); load_dotenv("../.env.local")
 
+def get_supabase_auth_config():
+    """Publishable Supabase client config for normal (non-admin) user auth.
+
+    Returns ONLY the anon/publishable key — never the service-role key from
+    the backend .env — so this is safe to serve to any browser. The values
+    come from the frontend .env.local (NEXT_PUBLIC_* = meant for clients).
+    """
+    url = (os.getenv("NEXT_PUBLIC_SUPABASE_URL") or "").strip()
+    anon_key = (os.getenv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") or "").strip()
+    return {"enabled": bool(url and anon_key), "url": url, "anonKey": anon_key}
+
+def _content_security_policy() -> str:
+    """CSP built per response so the Supabase project origin is only allowed
+    when the operator has actually configured Supabase auth."""
+    supabase_url = (get_supabase_auth_config()["url"] or "").rstrip("/")
+    connect_src = "connect-src 'self' https://api.github.com"
+    if supabase_url:
+        # Supabase Auth (GoTrue) lives on the project URL — the browser must
+        # be able to reach it for login/session refresh.
+        connect_src += f" {supabase_url}"
+    return (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "img-src 'self' data: https://github.com https://avatars.githubusercontent.com; "
+        f"{connect_src}; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "frame-ancestors 'none';"
+    )
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
@@ -78,15 +108,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com; "
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-            "img-src 'self' data: https://github.com https://avatars.githubusercontent.com; "
-            "connect-src 'self' https://api.github.com; "
-            "font-src 'self' https://fonts.gstatic.com; "
-            "frame-ancestors 'none';"
-        )
+        response.headers["Content-Security-Policy"] = _content_security_policy()
         # HSTS only when cookies are Secure (HTTPS deployments)
         if cookie_is_secure():
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
@@ -122,6 +144,15 @@ class AnalyzeRequest(BaseModel):
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "message": "Python backend is running"}
+
+@app.get("/api/config/supabase")
+async def supabase_client_config():
+    """Publishable config for normal-user auth (GitHub OAuth / email).
+
+    The anon key is public by design (NEXT_PUBLIC_*). The service-role key
+    lives only in the backend .env and is never returned here.
+    """
+    return get_supabase_auth_config()
 
 @app.get("/diagnostic/github")
 async def diagnostic_github():
@@ -225,6 +256,13 @@ async def serve_history():
 @app.get("/privacy")
 async def serve_privacy():
     return FileResponse("../frontend/privacy.html")
+
+@app.get("/login")
+async def serve_login():
+    # Normal-user login (Supabase GitHub OAuth / email + password). This is
+    # separate from Rizz Master admin auth at /contributors/admin.
+    # no-store so a stale cached copy of an auth page can never resurface.
+    return FileResponse("../frontend/login.html", headers={"Cache-Control": "no-store"})
 
 @app.get("/contributors")
 async def serve_contributors():
